@@ -1,0 +1,115 @@
+[
+  {
+    "id": "s9zoxs",
+    "question": "Your favourite day",
+    "options": [
+      {
+        "text": "Monday",
+        "votes": 14
+      },
+      {
+        "text": "Tuesday",
+        "votes": 15
+      }
+    ],
+    "createdAt": "2025-08-28T11:02:40.717Z",
+    "createdBy": "user"
+  },
+  {
+    "id": "whgm5t",
+    "question": "Your favourite country",
+    "options": [
+      {
+        "text": "Canada",
+        "votes": 4
+      },
+      {
+        "text": "USA",
+        "votes": 1
+      },
+      {
+        "text": "Germany",
+        "votes": 0
+      },
+      {
+        "text": "United Kingdom",
+        "votes": 12
+      }
+    ],
+    "createdAt": "2025-08-28T11:42:19.512Z",
+    "createdBy": "user"
+  },
+  {
+    "id": "baxuwj",
+    "question": "What part of Canada you can't wait to visit?",
+    "options": [
+      {
+        "text": "Ontario",
+        "votes": 19
+      },
+      {
+        "text": "PEI",
+        "votes": 12
+      },
+      {
+        "text": "Nova Scotia",
+        "votes": 15
+      }
+    ],
+    "createdAt": "2025-08-28T11:57:18.842Z",
+    "createdBy": "user"
+  },
+  {
+    "id": "9vaja",
+    "question": "What part of Africa are you from?",
+    "options": [
+      {
+        "text": "Nigeria",
+        "votes": 9
+      },
+      {
+        "text": "Ghana",
+        "votes": 7
+      },
+      {
+        "text": "Togo",
+        "votes": 4
+      },
+      {
+        "text": "Cameron",
+        "votes": 7
+      }
+    ],
+    "createdAt": "2025-08-28T12:28:06.121Z",
+    "createdBy": "user",
+    "requireAuth": false,
+    "singleVote": true,
+    "status": "open"
+  },
+  {
+    "id": "tf0ni",
+    "question": "What faith do you believe in?",
+    "options": [
+      {
+        "text": "Islam",
+        "votes": 1
+      },
+      {
+        "text": "Christianity",
+        "votes": 0
+      },
+      {
+        "text": "Others",
+        "votes": 0
+      }
+    ],
+    "createdAt": "2025-08-28T12:43:48.986Z",
+    "createdBy": "user",
+    "requireAuth": true,
+    "singleVote": true,
+    "status": "open",
+    "voted": [
+      true
+    ]
+  }
+]
