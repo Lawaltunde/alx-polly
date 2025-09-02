@@ -5,11 +5,11 @@
     "options": [
       {
         "text": "Monday",
-        "votes": 14
+        "votes": 20
       },
       {
         "text": "Tuesday",
-        "votes": 16
+        "votes": 21
       }
     ],
     "createdAt": "2025-08-28T11:02:40.717Z",
@@ -45,11 +45,11 @@
     "options": [
       {
         "text": "Ontario",
-        "votes": 19
+        "votes": 20
       },
       {
         "text": "PEI",
-        "votes": 12
+        "votes": 13
       },
       {
         "text": "Nova Scotia",
@@ -69,11 +69,11 @@
       },
       {
         "text": "Ghana",
-        "votes": 7
+        "votes": 8
       },
       {
         "text": "Togo",
-        "votes": 4
+        "votes": 5
       },
       {
         "text": "Cameron",
