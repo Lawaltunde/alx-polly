@@ -11,17 +11,26 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { createPoll } from "@/app/lib/actions";
+import { useRouter } from "next/navigation";
 
 const initialState = {
-  errors: {},
+  errors: {} as Record<string, string[]>,
+  success: false,
 };
 
 export default function NewPollPage() {
   const [state, dispatch] = useFormState(createPoll, initialState);
   const [options, setOptions] = useState(["", ""]);
+  const router = useRouter();
+
+  useEffect(() => {
+    if (state.success) {
+      router.push("/polls");
+    }
+  }, [state.success, router]);
 
   const handleAddOption = () => {
     setOptions([...options, ""]);

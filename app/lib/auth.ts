@@ -1,19 +1,42 @@
-import { cookies } from 'next/headers';
+import { createClient } from './supabase/server';
+import { redirect } from 'next/navigation';
+
+export async function getCurrentUser() {
+  const supabase = await createClient();
+  const { data: { user }, error } = await supabase.auth.getUser();
+  
+  if (error || !user) {
+    return null;
+  }
+  
+  return user;
+}
+
+export async function requireAuth() {
+  const user = await getCurrentUser();
+  if (!user) {
+    redirect('/login');
+  }
+  return user;
+}
 
 export async function isAuthenticated() {
-  const session = cookies().get('session');
-  return !!session;
+  const user = await getCurrentUser();
+  return !!user;
 }
 
-export async function setSession(userId: string) {
-  cookies().set('session', userId, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    maxAge: 60 * 60 * 24 * 7, // One week
-    path: '/',
-  });
-}
+export async function getProfile(userId: string) {
+  const supabase = await createClient();
+  const { data: profile, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
 
-export async function clearSession() {
-  cookies().delete('session');
+  if (error) {
+    console.error('Error fetching profile:', error);
+    return null;
+  }
+
+  return profile;
 }

@@ -1,4 +1,4 @@
-import { getPoll } from "@/app/lib/data";
+import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import { handleVote } from "@/app/lib/actions";
 import { Button } from "@/components/ui/button";
@@ -7,14 +7,15 @@ import ShareButton from "@/app/components/ShareButton";
 import PollStatusButton from "@/app/components/shared/PollStatusButton";
 import { Settings } from "lucide-react";
 
-export default async function PollPage({ params }: { params: { pollId: string } }) {
-  const poll = await getPoll(params.pollId);
+export default async function PollPage({ params }: { params: Promise<{ pollId: string }> }) {
+  const { pollId } = await params;
+  const poll = await getPoll(pollId);
 
   if (!poll) {
     notFound();
   }
 
-  const totalVotes = poll.options.reduce((acc, o) => acc + o.votes, 0);
+  const totalVotes = 0; // TODO: Implement vote counting from votes table
 
   return (
     <div className="space-y-8">
@@ -37,11 +38,11 @@ export default async function PollPage({ params }: { params: { pollId: string } 
           <h2 className="text-2xl font-bold mb-4">Options</h2>
           <form action={handleVote.bind(null, poll.id, "dashboard")}>
             <div className="space-y-4">
-              {poll.options.map((option) => (
+              {poll.poll_options?.map((option) => (
                 <button
-                  key={option.text}
+                  key={option.id}
                   name="option"
-                  value={option.text}
+                  value={option.id}
                   className="option-button w-full text-left p-4 border rounded-lg flex justify-between items-center bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                 >
                   <span className="font-semibold">{option.text}</span>
@@ -53,18 +54,18 @@ export default async function PollPage({ params }: { params: { pollId: string } 
         <div>
           <h2 className="text-2xl font-bold mb-4">Results</h2>
           <div className="space-y-4">
-            {poll.options.map((option) => (
-              <div key={option.text} className="space-y-2">
+            {poll.poll_options?.map((option) => (
+              <div key={option.id} className="space-y-2">
                 <div className="flex justify-between items-center">
                   <span className="font-semibold">{option.text}</span>
                   <span className="text-sm text-gray-500 dark:text-gray-400">
-                    {option.votes} votes ({totalVotes > 0 ? ((option.votes / totalVotes) * 100).toFixed(1) : 0}%)
+                    0 votes (0%)
                   </span>
                 </div>
                 <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
                   <div
                     className="bg-blue-500 h-4 rounded-full"
-                    style={{ width: `${totalVotes > 0 ? (option.votes / totalVotes) * 100 : 0}%` }}
+                    style={{ width: '0%' }}
                   ></div>
                 </div>
               </div>

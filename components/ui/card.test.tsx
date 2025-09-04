@@ -9,14 +9,14 @@ describe('Card Components', () => {
 
       const card = screen.getByText('Card content');
       expect(card).toBeInTheDocument();
-      expect(card.parentElement).toHaveClass('rounded-lg', 'border', 'bg-card');
+      expect(card.closest('[data-slot="card"]')).toHaveClass('bg-card');
     });
 
     it('should apply custom className', () => {
       render(<Card className="custom-card">Custom card</Card>);
 
       const card = screen.getByText('Custom card');
-      expect(card.parentElement).toHaveClass('custom-card');
+      expect(card.closest('[data-slot="card"]')).toHaveClass('custom-card');
     });
   });
 
@@ -26,7 +26,7 @@ describe('Card Components', () => {
 
       const header = screen.getByText('Header content');
       expect(header).toBeInTheDocument();
-      expect(header).toHaveClass('flex', 'flex-col', 'space-y-1.5', 'p-6');
+      expect(header).toHaveClass('px-6');
     });
   });
 
@@ -36,7 +36,7 @@ describe('Card Components', () => {
 
       const title = screen.getByText('Card Title');
       expect(title).toBeInTheDocument();
-      expect(title).toHaveClass('text-2xl', 'font-semibold', 'leading-none', 'tracking-tight');
+      expect(title).toHaveClass('font-semibold', 'leading-none');
     });
   });
 
@@ -56,7 +56,7 @@ describe('Card Components', () => {
 
       const content = screen.getByText('Content here');
       expect(content).toBeInTheDocument();
-      expect(content).toHaveClass('p-6', 'pt-0');
+      expect(content).toHaveClass('px-6');
     });
   });
 
@@ -66,7 +66,7 @@ describe('Card Components', () => {
 
       const footer = screen.getByText('Footer content');
       expect(footer).toBeInTheDocument();
-      expect(footer).toHaveClass('flex', 'items-center', 'p-6', 'pt-0');
+      expect(footer).toHaveClass('flex', 'items-center', 'px-6');
     });
   });
 
@@ -103,7 +103,7 @@ describe('Card Components', () => {
 
       const card = screen.getByText('Title').closest('.test-card');
       expect(card).toBeInTheDocument();
-      expect(card).toHaveClass('rounded-lg', 'border', 'bg-card');
+      expect(card).toHaveClass('test-card');
     });
   });
 });

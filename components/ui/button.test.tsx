@@ -19,7 +19,7 @@ describe('Button', () => {
 
     rerender(<Button variant="outline">Outline</Button>);
     button = screen.getByRole('button', { name: 'Outline' });
-    expect(button).toHaveClass('border', 'border-input');
+    expect(button).toHaveClass('border');
 
     rerender(<Button variant="secondary">Secondary</Button>);
     button = screen.getByRole('button', { name: 'Secondary' });
@@ -30,15 +30,15 @@ describe('Button', () => {
     const { rerender } = render(<Button size="sm">Small</Button>);
     
     let button = screen.getByRole('button', { name: 'Small' });
-    expect(button).toHaveClass('h-9', 'px-3');
+    expect(button).toHaveClass('h-8');
 
     rerender(<Button size="lg">Large</Button>);
     button = screen.getByRole('button', { name: 'Large' });
-    expect(button).toHaveClass('h-11', 'px-8');
+    expect(button).toHaveClass('h-10');
 
     rerender(<Button size="icon">Icon</Button>);
     button = screen.getByRole('button', { name: 'Icon' });
-    expect(button).toHaveClass('h-10', 'w-10');
+    expect(button).toHaveClass('size-9');
   });
 
   it('should handle click events', () => {

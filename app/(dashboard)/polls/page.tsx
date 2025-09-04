@@ -1,11 +1,19 @@
-import { getPolls } from "@/app/lib/data";
+import { getPolls } from "@/app/lib/supabase/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 
 export default async function PollsPage() {
-  const polls = await getPolls();
+  let polls;
+
+  try {
+    polls = await getPolls();
+  } catch (error) {
+    console.error(error);
+    polls = [];
+  }
+
 
   return (
     <div className="space-y-8">
@@ -30,10 +38,13 @@ export default async function PollsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {poll.options.map((o) => o.text).join(", ")}
+                    {poll.poll_options?.map((o) => o.text).join(", ") || "No options"}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
-                    {poll.options.reduce((acc, o) => acc + o.votes, 0)} votes
+                    {poll.poll_options?.length || 0} options
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    by {poll.profiles?.username || 'Anonymous'}
                   </p>
                 </CardContent>
               </Card>

@@ -2,6 +2,10 @@ import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import React from 'react';
 
+// Mock environment variables for tests
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -15,6 +19,7 @@ vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
   usePathname: () => '/',
   redirect: vi.fn(),
+  notFound: vi.fn(),
 }));
 
 // Mock Next.js Link component
@@ -22,6 +27,41 @@ vi.mock('next/link', () => ({
   default: ({ children, href, ...props }: any) => {
     return React.createElement('a', { href, ...props }, children);
   },
+}));
+
+// Mock Supabase server client
+vi.mock('@/app/lib/supabase/server', () => ({
+  createClient: vi.fn(() => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          order: vi.fn(() => ({
+            single: vi.fn(() => ({ data: null, error: null })),
+          })),
+          single: vi.fn(() => ({ data: null, error: null })),
+        })),
+        single: vi.fn(() => ({ data: null, error: null })),
+      })),
+      insert: vi.fn(() => ({
+        select: vi.fn(() => ({
+          single: vi.fn(() => ({ data: null, error: null })),
+        })),
+      })),
+      update: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          select: vi.fn(() => ({
+            single: vi.fn(() => ({ data: null, error: null })),
+          })),
+        })),
+      })),
+      delete: vi.fn(() => ({
+        eq: vi.fn(),
+      })),
+    })),
+    auth: {
+      getUser: vi.fn(() => ({ data: { user: null }, error: null })),
+    },
+  })),
 }));
 
 // Mock file system for data operations

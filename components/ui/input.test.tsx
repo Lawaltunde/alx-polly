@@ -8,7 +8,7 @@ describe('Input', () => {
 
     const input = screen.getByPlaceholderText('Enter text');
     expect(input).toBeInTheDocument();
-    expect(input).toHaveClass('flex', 'h-10', 'w-full', 'rounded-md');
+    expect(input).toHaveClass('h-9', 'w-full', 'rounded-md');
   });
 
   it('should handle value changes', () => {

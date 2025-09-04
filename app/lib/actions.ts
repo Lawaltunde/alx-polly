@@ -3,24 +3,28 @@
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { addPoll, getPoll, removePoll, submitVote } from "./data";
-import { setSession, clearSession, isAuthenticated } from "./auth";
+import { 
+  createPoll as createPollInSupabase, 
+  getPoll, 
+  deletePoll, 
+  submitVote as submitVoteToSupabase,
+  togglePollStatus as togglePollStatusInSupabase,
+  updatePoll as updatePollInSupabase,
+  getUserPolls 
+} from "./supabase/queries";
+import { getCurrentUser, requireAuth } from "./auth";
+import { generatePollQRCode } from "./qr-code";
+import { createClient } from "./supabase/server";
 
-const pollSchema = z.object({
-  question: z.string().min(1, "Question is required"),
-  options: z
-    .array(z.string().min(1, "Option cannot be empty"))
-    .min(2, "At least two options are required"),
-  requireAuth: z.boolean(),
-  singleVote: z.boolean(),
+const loginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
-export async function createPoll(prevState: any, formData: FormData) {
-  const validatedFields = pollSchema.safeParse({
-    question: formData.get("question"),
-    options: formData.getAll("options").filter((o) => o !== ""),
-    requireAuth: formData.get("requireAuth") === "on",
-    singleVote: formData.get("singleVote") === "on",
+export async function login(prevState: any, formData: FormData) {
+  const validatedFields = loginSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
   });
 
   if (!validatedFields.success) {
@@ -29,21 +33,154 @@ export async function createPoll(prevState: any, formData: FormData) {
     };
   }
 
-  const poll = {
-    id: Math.random().toString(36).substring(7),
-    question: validatedFields.data.question,
-    options: validatedFields.data.options.map((option) => ({ text: option, votes: 0 })),
-    createdAt: new Date(),
-    createdBy: "user",
-    requireAuth: validatedFields.data.requireAuth,
-    singleVote: validatedFields.data.singleVote,
-    status: "open",
-  };
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signInWithPassword(validatedFields.data);
 
-  await addPoll(poll);
+  if (error) {
+    return {
+      errors: { general: [error.message] },
+    };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/polls");
+}
+
+const signupSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
+});
+
+export async function signup(prevState: any, formData: FormData) {
+  const validatedFields = signupSchema.safeParse({
+    email: formData.get("email"),
+    password: formData.get("password"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+    };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase.auth.signUp(validatedFields.data);
+
+  if (error) {
+    return {
+      errors: { general: [error.message] },
+    };
+  }
+
+  revalidatePath("/", "layout");
+  redirect("/polls");
+}
+
+const pollSchema = z.object({
+  question: z.string().min(1, "Question is required"),
+  options: z
+    .array(z.string().min(1, "Option cannot be empty"))
+    .min(2, "At least two options are required"),
+  require_auth: z.boolean(),
+  single_vote: z.boolean(),
+});
+
+export async function createPoll(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  // Ensure the user has a profile
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("id")
+    .eq("id", user.id)
+    .single();
+
+  if (!profile) {
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .insert({ id: user.id });
+
+    if (profileError) {
+      console.error("Error creating profile in createPoll:", profileError);
+      return {
+        errors: { _form: ["Error creating your user profile."] },
+        success: false,
+      };
+    }
+  }
+
+  const schema = z.object({
+    question: z.string().min(1, "Question cannot be empty"),
+    options: z
+      .array(z.string().min(1))
+      .min(2, "At least two options are required"),
+  });
+
+  const validatedFields = schema.safeParse({
+    question: formData.get("question"),
+    options: formData.getAll("options").filter((o) => o !== ""),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      success: false,
+    };
+  }
+
+  const { question, options } = validatedFields.data;
+  const requireAuth = formData.get("requireAuth") === "on";
+  const singleVote = formData.get("singleVote") === "on";
+
+  // 1. Create poll
+  const { data: poll, error: pollError } = await supabase
+    .from("polls")
+    .insert({
+      question,
+      created_by: user.id,
+      require_auth: requireAuth,
+      single_vote: singleVote,
+      status: "open",
+    })
+    .select()
+    .single();
+
+  if (pollError) {
+    console.error("Poll creation error:", pollError);
+    return {
+      errors: { _form: [pollError.message] },
+      success: false,
+    };
+  }
+
+  // 2. Create poll options
+  const pollOptions = options.map((text) => ({
+    text,
+    poll_id: poll.id,
+  }));
+
+  const { error: optionsError } = await supabase
+    .from("poll_options")
+    .insert(pollOptions);
+
+  if (optionsError) {
+    // This is not transactional. If this fails, the poll is created without options.
+    // For now, this is better than what was there before.
+    return {
+      errors: { _form: [optionsError.message] },
+      success: false,
+    };
+  }
 
   revalidatePath("/polls");
-  redirect(`/polls/${poll.id}`);
+  return { success: true, errors: {} };
 }
 
 export async function handleVote(
@@ -51,117 +188,97 @@ export async function handleVote(
   source: "dashboard" | "public",
   formData: FormData
 ) {
-  const poll = await getPoll(pollId);
-  if (!poll || poll.status === "closed") {
-    // Handle poll not found or closed
-    return;
-  }
-
-  let user: string | undefined;
-  if (poll.requireAuth) {
-    user = await isAuthenticated();
-    if (!user) {
-      redirect("/login");
-    }
-
-    if (poll.singleVote && poll.voted?.includes(user)) {
-      // Handle already voted
+  try {
+    const poll = await getPoll(pollId);
+    if (!poll || poll.status === "closed") {
+      // Handle poll not found or closed
       return;
     }
-  }
 
-  const selectedOption = formData.get("option") as string;
-  await submitVote(pollId, selectedOption, user);
+    let userId: string | undefined;
+    if (poll.require_auth) {
+      const user = await requireAuth();
+      userId = user.id;
+    }
 
-  if (source === "public") {
-    revalidatePath(`/p/${pollId}`);
-    redirect(`/p/${pollId}?voted=true`);
-  } else {
-    revalidatePath(`/polls/${pollId}`);
+    const selectedOptionId = formData.get("option") as string;
+    
+    // Submit vote using the new Supabase function
+    await submitVoteToSupabase({
+      poll_id: pollId,
+      option_id: selectedOptionId,
+      user_id: userId
+    });
+
+    if (source === "public") {
+      revalidatePath(`/p/${pollId}`);
+      redirect(`/p/${pollId}?voted=true`);
+    } else {
+      revalidatePath(`/polls/${pollId}`);
+    }
+  } catch (error) {
+    console.error('Error handling vote:', error);
+    // You might want to return an error message here
   }
 }
 
 export async function updatePoll(pollId: string, prevState: any, formData: FormData) {
-  const validatedFields = pollSchema.safeParse({
-    question: formData.get("question"),
-    options: formData.getAll("options").filter((o) => o !== ""),
-    requiresAuthentication: formData.get("requiresAuthentication") === "on",
-  });
+  try {
+    const user = await requireAuth();
+    
+    const validatedFields = pollSchema.safeParse({
+      question: formData.get("question"),
+      options: formData.getAll("options").filter((o) => o !== ""),
+      require_auth: formData.get("requireAuth") === "on",
+      single_vote: formData.get("singleVote") === "on",
+    });
 
-  if (!validatedFields.success) {
+    if (!validatedFields.success) {
+      return {
+        errors: validatedFields.error.flatten().fieldErrors,
+      };
+    }
+
+    // Use the Supabase update function
+    await updatePollInSupabase(pollId, validatedFields.data, user.id);
+
+    revalidatePath(`/polls/${pollId}`);
+    revalidatePath(`/polls/${pollId}/settings`);
+    redirect(`/polls/${pollId}`);
+  } catch (error) {
+    console.error('Error updating poll:', error);
     return {
-      errors: validatedFields.error.flatten().fieldErrors,
+      errors: { general: ['Failed to update poll. Please try again.'] }
     };
   }
-
-  const poll = await getPoll(pollId);
-
-  if (!poll) {
-    return { message: "Poll not found" };
-  }
-
-  poll.question = validatedFields.data.question;
-  poll.options = validatedFields.data.options.map((option) => ({
-    text: option,
-    votes: 0,
-  }));
-  poll.requiresAuthentication = validatedFields.data.requiresAuthentication;
-
-  // In a real app, you would have a proper updatePoll function
-  const polls = await getPolls();
-  const pollIndex = polls.findIndex((p) => p.id === pollId);
-  if (pollIndex !== -1) {
-    polls[pollIndex] = poll;
-    await writePolls(polls);
-  }
-
-  revalidatePath(`/polls/${pollId}`);
-  revalidatePath(`/polls/${pollId}/settings`);
-  redirect(`/polls/${pollId}`);
 }
 
-export async function deletePoll(pollId: string) {
+export async function deletePollAction(pollId: string) {
   try {
-    await removePoll(pollId);
+    const user = await requireAuth();
+    await deletePoll(pollId, user.id);
     revalidatePath("/polls");
+    redirect("/polls");
   } catch (error) {
     console.error("Error deleting poll:", error);
-    // Optionally, you can return an error message to the client
-    return { message: "Error deleting poll" };
+    // Redirect to polls page on error
+    redirect("/polls");
   }
-  redirect("/polls");
 }
 
 export async function togglePollStatus(pollId: string) {
-  const poll = await getPoll(pollId);
-  if (poll) {
-    poll.status = poll.status === "open" ? "closed" : "open";
-    // This is a simplified example. In a real app, you would have a proper updatePoll function
-    const polls = await getPolls();
-    const pollIndex = polls.findIndex((p) => p.id === pollId);
-    if (pollIndex !== -1) {
-      polls[pollIndex] = poll;
-      await writePolls(polls);
-    }
+  try {
+    const user = await requireAuth();
+    await togglePollStatusInSupabase(pollId, user.id);
     revalidatePath(`/polls/${pollId}`);
     revalidatePath("/polls");
-  }
-}
-
-export async function login(prevState: any, formData: FormData) {
-  const username = formData.get("username") as string;
-  const password = formData.get("password") as string;
-
-  // In a real app, you'd validate against a database
-  if (username === "admin" && password === "password") {
-    await setSession(username);
+  } catch (error) {
+    console.error('Error toggling poll status:', error);
+    // Redirect to polls page on error
     redirect("/polls");
-  } else {
-    return { message: "Invalid username or password" };
   }
 }
 
-export async function logout() {
-  await clearSession();
-  redirect("/login");
-}
+// Login and logout are now handled by Supabase Auth
+// These functions are kept for backward compatibility but should be replaced
+// with proper Supabase Auth integration in the UI components

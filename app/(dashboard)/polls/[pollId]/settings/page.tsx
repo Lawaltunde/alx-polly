@@ -1,11 +1,12 @@
-import { getPoll } from "@/app/lib/data";
+import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
-import { deletePoll } from "@/app/lib/actions";
+import { deletePollAction } from "@/app/lib/actions";
 import { Button } from "@/components/ui/button";
 import EditPollForm from "@/app/components/shared/EditPollForm";
 
-export default async function PollSettingsPage({ params }: { params: { pollId: string } }) {
-  const poll = await getPoll(params.pollId);
+export default async function PollSettingsPage({ params }: { params: Promise<{ pollId: string }> }) {
+  const { pollId } = await params;
+  const poll = await getPoll(pollId);
 
   if (!poll) {
     notFound();
@@ -23,7 +24,7 @@ export default async function PollSettingsPage({ params }: { params: { pollId: s
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           This action is irreversible. Please be certain before deleting this poll.
         </p>
-        <form action={deletePoll.bind(null, poll.id)}>
+        <form action={deletePollAction.bind(null, poll.id)}>
           <Button variant="destructive">Delete Poll</Button>
         </form>
       </div>

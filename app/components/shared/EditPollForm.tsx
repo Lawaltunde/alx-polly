@@ -6,9 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { PollWithDetails } from "@/app/lib/types";
 
-export default function EditPollForm({ poll }: { poll: any }) {
-  const initialState = { errors: {}, message: null };
+export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
+  const initialState = { errors: {} as Record<string, string[]> };
   const updatePollWithId = updatePoll.bind(null, poll.id);
   const [state, dispatch] = useFormState(updatePollWithId, initialState);
 
@@ -26,8 +27,8 @@ export default function EditPollForm({ poll }: { poll: any }) {
       </div>
       <div className="mb-4">
         <Label>Options</Label>
-        {poll.options.map((option: any, index: number) => (
-          <div key={index} className="flex items-center mb-2">
+        {poll.poll_options?.map((option, index: number) => (
+          <div key={option.id} className="flex items-center mb-2">
             <Input name={`options`} defaultValue={option.text} />
           </div>
         ))}
@@ -42,8 +43,8 @@ export default function EditPollForm({ poll }: { poll: any }) {
         <Label htmlFor="requires-authentication">Requires Authentication</Label>
         <Switch
           id="requires-authentication"
-          name="requiresAuthentication"
-          defaultChecked={poll.requiresAuthentication}
+          name="requireAuth"
+          defaultChecked={poll.require_auth}
         />
       </div>
       <Button type="submit">Save Changes</Button>
