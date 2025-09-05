@@ -1,36 +1,88 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Polly - A Real-Time Polling Application
 
-## Getting Started
+Polly is a full-stack web application that allows users to create, manage, and vote on polls in real-time. It is built with modern web technologies to provide a seamless and interactive user experience.
 
-First, run the development server:
+## Project Overview
+
+This application is designed to be a real-time polling system where users can sign up, log in, and participate in polls. The key features include:
+
+- **User Authentication**: Secure sign-up and login functionality.
+- **Poll Management**: Create, update, and delete polls.
+- **Real-Time Voting**: Vote on polls and see the results update live.
+- **User Dashboard**: View and manage your polls.
+
+## Tech Stack
+
+- **Framework**: [Next.js](https://nextjs.org/) (v14+)
+- **Database**: [Supabase](https://supabase.io/) (PostgreSQL)
+- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
+- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
+- **Icons**: [Lucide React](https://lucide.dev/)
+- **Testing**: [Vitest](https://vitest.dev/)
+
+## Setup and Installation
+
+To get the project up and running on your local machine, follow these steps:
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/alx-polly.git
+cd alx-polly
+```
+
+### 2. Install Dependencies
+
+```bash
+npm install
+```
+
+### 3. Set Up Supabase
+
+1.  **Create a Supabase Project**: Go to [Supabase](https://supabase.io/) and create a new project.
+2.  **Database Schema**: In the Supabase SQL Editor, run the schema from `supabase/migrations/001_initial_schema.sql` to set up the necessary tables and policies.
+3.  **Get API Keys**: In your Supabase project settings, find your **Project URL** and **anon key**.
+
+### 4. Configure Environment Variables
+
+Create a `.env.local` file in the root of the project and add your Supabase credentials:
+
+```bash
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+## How to Run the App
+
+To start the development server, run the following command:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage Examples
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Creating a Poll
 
-## Learn More
+1.  Log in to your account.
+2.  Navigate to the **Polls** page from the user menu.
+3.  Click the **Create Poll** button.
+4.  Fill in the poll question and options, then submit.
 
-To learn more about Next.js, take a look at the following resources:
+### Voting on a Poll
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1.  From the main dashboard, click on any poll to view it.
+2.  Select an option and click the **Vote** button.
+3.  The poll results will update in real-time.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Running Tests
 
-## Deploy on Vercel
+This project uses Vitest for testing. To run the test suite, use the following command:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```bash
+npm test
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This will run all the tests and provide a summary of the results.

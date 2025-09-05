@@ -4,12 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
 
+/**
+ * The main page for the user dashboard, which displays a list of all polls.
+ * This component fetches all polls from the database and renders them in a grid.
+ * It serves as the central hub for users to view and interact with existing polls,
+ * and it provides a clear entry point for creating new polls.
+ * 
+ * @returns {Promise<JSX.Element>} A promise that resolves to the rendered polls page.
+ */
 export default async function PollsPage() {
   let polls;
 
   try {
+    // Fetches all polls from the database using the getPolls query.
+    // This is a server-side operation, so the data is fresh on every page load.
     polls = await getPolls();
   } catch (error) {
+    // In case of an error (e.g., database connection issue), log the error
+    // and default to an empty array to prevent the page from crashing.
     console.error(error);
     polls = [];
   }
@@ -19,6 +31,7 @@ export default async function PollsPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Polls</h1>
+        {/* This link navigates the user to the page for creating a new poll. */}
         <Link href="/polls/new">
           <Button className="create-poll-button flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white">
             <PlusCircle className="w-5 h-5" />
@@ -28,6 +41,7 @@ export default async function PollsPage() {
       </div>
       {polls.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {/* Map over the array of polls and render a card for each one. */}
           {polls.map((poll) => (
             <Link href={`/polls/${poll.id}`} key={poll.id}>
               <Card className="poll-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -52,6 +66,8 @@ export default async function PollsPage() {
           ))}
         </div>
       ) : (
+        // This section is displayed if there are no polls to show.
+        // It provides a clear call to action for the user to create the first poll.
         <div className="flex flex-col items-center justify-center text-center py-20">
           <h2 className="text-3xl font-bold text-gray-800 dark:text-white mb-4">No Polls Yet</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">

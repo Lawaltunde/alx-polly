@@ -15,10 +15,12 @@ import { useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { createPoll } from "@/app/lib/actions";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 const initialState = {
   errors: {} as Record<string, string[]>,
   success: false,
+  poll: null,
 };
 
 export default function NewPollPage() {
@@ -27,10 +29,11 @@ export default function NewPollPage() {
   const router = useRouter();
 
   useEffect(() => {
-    if (state.success) {
-      router.push("/polls");
+    if (state.success && state.poll) {
+      toast.success("Poll created successfully!");
+      router.push(`/polls`);
     }
-  }, [state.success, router]);
+  }, [state, router]);
 
   const handleAddOption = () => {
     setOptions([...options, ""]);
@@ -42,10 +45,17 @@ export default function NewPollPage() {
     setOptions(newOptions);
   };
 
+  const handleSubmit = (formData: FormData) => {
+    options.forEach((option) => {
+      formData.append("options", option);
+    });
+    dispatch(formData);
+  };
+
   return (
     <div className="flex justify-center items-center h-full">
       <Card className="w-full max-w-2xl">
-        <form action={dispatch}>
+        <form action={handleSubmit}>
           <CardHeader>
             <CardTitle>Create a New Poll</CardTitle>
             <CardDescription>
@@ -70,7 +80,6 @@ export default function NewPollPage() {
                 {options.map((option, index) => (
                   <Input
                     key={index}
-                    name="options"
                     value={option}
                     onChange={(e) => handleOptionChange(index, e.target.value)}
                     placeholder={`Option ${index + 1}`}

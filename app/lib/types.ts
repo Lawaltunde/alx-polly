@@ -47,12 +47,12 @@ export interface PollQRCode {
 }
 
 export interface PollWithDetails extends Poll {
-  poll_options: PollOption[];
+  poll_options: PollOptionWithVotes[];
   profiles: Profile;
 }
 
 export interface PollOptionWithVotes extends PollOption {
-  votes_count?: number;
+  votes: { count: number }[];
 }
 
 export interface CreatePollData {

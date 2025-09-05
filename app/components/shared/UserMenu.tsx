@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,45 +9,54 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { User as UserIcon } from "lucide-react";
+import { useAuth } from "@/app/context/AuthContext";
 import LogoutButton from "@/app/ui/logout-button";
-import { User } from "@supabase/supabase-js";
+import Link from "next/link";
 
-type UserMenuProps = {
-  user: User | null;
-};
+/**
+ * A user menu component that displays user information and navigation links.
+ * This component is crucial for user interaction, providing access to key areas
+ * like the polls dashboard and settings. It also handles the display of
+ * authentication status, showing either a logout button or a login link.
+ * 
+ * @returns {JSX.Element} The rendered user menu component.
+ */
+export function UserMenu() {
+  // The useAuth hook provides the current user's authentication state.
+  const { user } = useAuth();
 
-export default function UserMenu({ user }: UserMenuProps) {
   return (
-    <div className="flex items-center space-x-4">
-      {user ? (
-        <DropdownMenu>
-          <DropdownMenuTrigger>
-            <Avatar>
-              <AvatarImage src={user.user_metadata.avatar_url} />
-              <AvatarFallback>
-                <UserIcon />
-              </AvatarFallback>
-            </Avatar>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent>
+    <DropdownMenu>
+      <DropdownMenuTrigger>
+        <Avatar>
+          {/* The user's avatar image is displayed here. A fallback is used if the image is not available. */}
+          <AvatarImage src={user?.user_metadata.avatar_url} />
+          <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+        </Avatar>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end">
+        {user ? (
+          // If the user is authenticated, display their email and navigation links.
+          <>
             <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem asChild>
               <Link href="/polls">Polls</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>
+            <DropdownMenuItem asChild>
               <Link href="/settings">Settings</Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
-              <LogoutButton />
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      ) : (
-        <Link href="/login">Login</Link>
-      )}
-    </div>
+            {/* The LogoutButton component handles the sign-out process. */}
+            <LogoutButton />
+          </>
+        ) : (
+          // If the user is not authenticated, display a link to the login page.
+          <DropdownMenuItem asChild>
+            <Link href="/login">Login</Link>
+          </DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

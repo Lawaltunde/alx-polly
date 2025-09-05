@@ -123,6 +123,8 @@ export async function createPoll(prevState: any, formData: FormData) {
       .min(2, "At least two options are required"),
   });
 
+  console.log("formData options:", formData.getAll("options"));
+
   const validatedFields = schema.safeParse({
     question: formData.get("question"),
     options: formData.getAll("options").filter((o) => o !== ""),
@@ -161,16 +163,20 @@ export async function createPoll(prevState: any, formData: FormData) {
   }
 
   // 2. Create poll options
-  const pollOptions = options.map((text) => ({
+  const pollOptions = options.map((text, index) => ({
     text,
     poll_id: poll.id,
+    order_index: index,
   }));
+
+  console.log("pollOptions to be inserted:", pollOptions);
 
   const { error: optionsError } = await supabase
     .from("poll_options")
     .insert(pollOptions);
 
   if (optionsError) {
+    console.error("Poll options creation error:", optionsError);
     // This is not transactional. If this fails, the poll is created without options.
     // For now, this is better than what was there before.
     return {
@@ -180,7 +186,7 @@ export async function createPoll(prevState: any, formData: FormData) {
   }
 
   revalidatePath("/polls");
-  return { success: true, errors: {} };
+  return { success: true, errors: {}, poll };
 }
 
 export async function handleVote(
