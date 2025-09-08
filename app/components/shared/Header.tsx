@@ -1,11 +1,12 @@
+"use client";
+
 import Link from "next/link";
 import { ThemeSwitcher } from "./ThemeSwitcher";
-import { getCurrentUser } from "@/app/lib/auth";
 import { UserMenu } from "@/app/components/shared/UserMenu";
+import { useAuth } from "@/app/context/AuthContext";
 
-export default async function Header() {
-  const user = await getCurrentUser();
-
+export default function Header() {
+  const { user } = useAuth();
   return (
     <header className="flex items-center justify-between p-4 border-b">
       <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
@@ -13,7 +14,7 @@ export default async function Header() {
       </h1>
       <div className="flex items-center space-x-4">
         <ThemeSwitcher />
-        <UserMenu />
+        <UserMenu user={user} />
       </div>
     </header>
   );

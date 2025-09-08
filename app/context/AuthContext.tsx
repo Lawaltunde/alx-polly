@@ -1,30 +1,55 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  useCallback,
+} from "react";
 import { createClient } from "@/app/lib/supabase/client";
-import { Session } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 
-const AuthContext = createContext<{ session: Session | null }>({ session: null });
+type AuthContextType = {
+  user: User | null;
+  refreshUser: () => void;
+};
+
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  refreshUser: () => {},
+});
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const supabase = createClient();
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
+  const refreshUser = useCallback(async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    setUser(user);
+  }, [supabase.auth]);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-    });
+    const { data: authListener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
 
-    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-    });
+    refreshUser();
 
     return () => {
       authListener.subscription.unsubscribe();
     };
-  }, [supabase]);
+  }, [supabase, refreshUser]);
 
-  return <AuthContext.Provider value={{ session }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider value={{ user, refreshUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

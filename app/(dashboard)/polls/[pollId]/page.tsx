@@ -7,6 +7,8 @@ import ShareButton from "@/app/components/ShareButton";
 import PollStatusButton from "@/app/components/shared/PollStatusButton";
 import { Settings } from "lucide-react";
 
+export const revalidate = 0;
+
 export default async function PollPage({ params }: { params: Promise<{ pollId: string }> }) {
   const { pollId } = await params;
   const poll = await getPoll(pollId);
@@ -15,7 +17,12 @@ export default async function PollPage({ params }: { params: Promise<{ pollId: s
     notFound();
   }
 
-  const totalVotes = 0; // TODO: Implement vote counting from votes table
+  const voteCounts = poll.poll_options?.map((option) => {
+    const count = option.votes[0]?.count || 0;
+    return { ...option, count };
+  });
+
+  const totalVotes = voteCounts?.reduce((acc, option) => acc + option.count, 0) || 0;
 
   return (
     <div className="space-y-8">
@@ -54,22 +61,25 @@ export default async function PollPage({ params }: { params: Promise<{ pollId: s
         <div>
           <h2 className="text-2xl font-bold mb-4">Results</h2>
           <div className="space-y-4">
-            {poll.poll_options?.map((option) => (
-              <div key={option.id} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="font-semibold">{option.text}</span>
-                  <span className="text-sm text-gray-500 dark:text-gray-400">
-                    0 votes (0%)
-                  </span>
+            {voteCounts?.map((option) => {
+              const percentage = totalVotes > 0 ? (option.count / totalVotes) * 100 : 0;
+              return (
+                <div key={option.id} className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{option.text}</span>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {option.count} votes ({percentage.toFixed(2)}%)
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
+                    <div
+                      className="bg-blue-500 h-4 rounded-full"
+                      style={{ width: `${percentage}%` }}
+                    ></div>
+                  </div>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-4">
-                  <div
-                    className="bg-blue-500 h-4 rounded-full"
-                    style={{ width: '0%' }}
-                  ></div>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       </div>

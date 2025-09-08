@@ -16,6 +16,7 @@ import { useFormState } from "react-dom";
 import { createPoll } from "@/app/lib/actions";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { X } from "lucide-react";
 
 const initialState = {
   errors: {} as Record<string, string[]>,
@@ -39,6 +40,14 @@ export default function NewPollPage() {
     setOptions([...options, ""]);
   };
 
+  const handleRemoveOption = (index: number) => {
+    if (options.length > 2) {
+      const newOptions = [...options];
+      newOptions.splice(index, 1);
+      setOptions(newOptions);
+    }
+  };
+
   const handleOptionChange = (index: number, value: string) => {
     const newOptions = [...options];
     newOptions[index] = value;
@@ -53,59 +62,71 @@ export default function NewPollPage() {
   };
 
   return (
-    <div className="flex justify-center items-center h-full">
-      <Card className="w-full max-w-2xl">
+    <div className="flex justify-center items-center h-full bg-gray-50 dark:bg-gray-900">
+      <Card className="w-full max-w-2xl shadow-lg">
         <form action={handleSubmit}>
           <CardHeader>
-            <CardTitle>Create a New Poll</CardTitle>
+            <CardTitle className="text-2xl font-bold">Create a New Poll</CardTitle>
             <CardDescription>
               Fill out the details below to create your poll.
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid w-full items-center gap-4">
-              <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="question">Question</Label>
-                <Input
-                  id="question"
-                  name="question"
-                  placeholder="What's your favorite color?"
-                />
-                {state.errors?.question && (
-                  <p className="text-sm text-red-500">{state.errors.question}</p>
-                )}
-              </div>
-              <div className="flex flex-col space-y-1.5">
-                <Label>Options</Label>
+          <CardContent className="space-y-6">
+            <div className="space-y-2">
+              <Label htmlFor="question" className="text-sm font-medium">Question</Label>
+              <Input
+                id="question"
+                name="question"
+                placeholder="What's your favorite color?"
+                className="mt-1"
+              />
+              {state.errors?.question && (
+                <p className="text-sm text-red-500">{state.errors.question}</p>
+              )}
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Options</Label>
+              <div className="space-y-2">
                 {options.map((option, index) => (
-                  <Input
-                    key={index}
-                    value={option}
-                    onChange={(e) => handleOptionChange(index, e.target.value)}
-                    placeholder={`Option ${index + 1}`}
-                  />
+                  <div key={index} className="flex items-center space-x-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => handleOptionChange(index, e.target.value)}
+                      placeholder={`Option ${index + 1}`}
+                    />
+                    {options.length > 2 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleRemoveOption(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
                 ))}
-                {state.errors?.options && (
-                  <p className="text-sm text-red-500">
-                    {state.errors.options.filter((o) => o).join(", ")}
-                  </p>
-                )}
               </div>
-              <Button type="button" variant="outline" onClick={handleAddOption}>
-                Add Option
-              </Button>
-              <div className="flex items-center space-x-2 mt-4">
-                <input type="checkbox" id="requireAuth" name="requireAuth" />
-                <Label htmlFor="requireAuth">Require authentication to vote</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <input type="checkbox" id="singleVote" name="singleVote" />
-                <Label htmlFor="singleVote">One vote per user</Label>
-              </div>
+              {state.errors?.options && (
+                <p className="text-sm text-red-500">
+                  {state.errors.options.filter((o) => o).join(", ")}
+                </p>
+              )}
+            </div>
+            <Button type="button" variant="outline" onClick={handleAddOption}>
+              Add Option
+            </Button>
+            <div className="flex items-center space-x-2 mt-4">
+              <input type="checkbox" id="requireAuth" name="requireAuth" />
+              <Label htmlFor="requireAuth">Require authentication to vote</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <input type="checkbox" id="singleVote" name="singleVote" />
+              <Label htmlFor="singleVote">One vote per user</Label>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-between">
-            <Button variant="outline">Cancel</Button>
+          <CardFooter className="flex justify-end space-x-2">
+            <Button variant="outline" onClick={() => router.back()}>Cancel</Button>
             <Button type="submit">Create Poll</Button>
           </CardFooter>
         </form>

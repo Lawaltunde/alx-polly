@@ -1,17 +1,21 @@
+import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
+import PollResults from "./PollResults";
 
-export default async function PollResultsPage({ params }: { params: Promise<{ pollId: string }> }) {
-  const { pollId } = await params;
+export default async function PollResultsPage({
+  params,
+}: {
+  params: { pollId: string };
+}) {
+  const poll = await getPoll(params.pollId);
 
-  // In a real app, you would fetch the poll data from a database
-  if (!pollId) {
+  if (!poll) {
     notFound();
   }
 
   return (
-    <div>
-      <h1>Poll {pollId} Results</h1>
-      <p>Poll results will be displayed here.</p>
+    <div className="container mx-auto p-4">
+      <PollResults initialPoll={poll} />
     </div>
   );
 }

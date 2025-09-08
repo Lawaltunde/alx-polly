@@ -1,30 +1,29 @@
+"use client";
+
 import { getPolls } from "@/app/lib/supabase/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
+import { useEffect, useState } from "react";
+import { PollWithDetails } from "@/app/lib/types";
 
-/**
- * The main page for the user dashboard, which displays a list of all polls.
- * This component fetches all polls from the database and renders them in a grid.
- * It serves as the central hub for users to view and interact with existing polls,
- * and it provides a clear entry point for creating new polls.
- * 
- * @returns {Promise<JSX.Element>} A promise that resolves to the rendered polls page.
- */
-export default async function PollsPage() {
-  let polls;
+export default function PollsPage() {
+  const [polls, setPolls] = useState<PollWithDetails[]>([]);
 
-  try {
-    // Fetches all polls from the database using the getPolls query.
-    // This is a server-side operation, so the data is fresh on every page load.
-    polls = await getPolls();
-  } catch (error) {
-    // In case of an error (e.g., database connection issue), log the error
-    // and default to an empty array to prevent the page from crashing.
-    console.error(error);
-    polls = [];
-  }
+  useEffect(() => {
+    const fetchPolls = async () => {
+      try {
+        const pollsData = await getPolls();
+        setPolls(pollsData);
+      } catch (error) {
+        console.error(error);
+        setPolls([]);
+      }
+    };
+
+    fetchPolls();
+  }, []);
 
 
   return (

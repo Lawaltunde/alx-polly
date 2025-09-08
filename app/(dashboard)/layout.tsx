@@ -1,14 +1,14 @@
-import { requireAuth } from "@/app/lib/auth";
+"use client";
+
 import Header from "@/app/components/shared/Header";
 import Sidebar from "@/app/components/shared/Sidebar";
 import React from "react";
 
-export default async function DashboardLayout({
+export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  await requireAuth();
   return (
     <div className="flex h-screen bg-gray-100 dark:bg-gray-900">
       <Sidebar />

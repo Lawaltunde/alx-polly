@@ -4,7 +4,7 @@
  * for all poll-related operations. This is crucial for maintaining data integrity
  * and for abstracting the database logic from the UI components.
  */
-import { createClient } from './server';
+import { createClient } from './client';
 import { 
   Poll, 
   PollOption, 
@@ -453,4 +453,26 @@ export async function getPollVotes(pollId: string): Promise<Vote[]> {
   }
 
   return votes || [];
+}
+
+/**
+ * Fetches poll results, specifically the option IDs for all votes on a poll.
+ * This is used to calculate the vote count for each option.
+ * 
+ * @param {string} pollId - The ID of the poll to get results for.
+ * @returns {Promise<{ option_id: string }[] | null>} A promise that resolves to an array of objects containing option IDs, or null on error.
+ */
+export async function getPollResults(pollId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('votes')
+    .select('option_id')
+    .eq('poll_id', pollId);
+
+  if (error) {
+    console.error('Error fetching poll results:', error);
+    return null;
+  }
+
+  return data;
 }

@@ -220,7 +220,7 @@ export async function handleVote(
       revalidatePath(`/p/${pollId}`);
       redirect(`/p/${pollId}?voted=true`);
     } else {
-      revalidatePath(`/polls/${pollId}`);
+      revalidatePath(`/polls/${pollId}`, "layout");
     }
   } catch (error) {
     console.error('Error handling vote:', error);
@@ -284,6 +284,89 @@ export async function togglePollStatus(pollId: string) {
     redirect("/polls");
   }
 }
+
+const profileSchema = z.object({
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  profile_picture: z
+    .instanceof(File)
+    .optional()
+    .refine(
+      (file) => !file || file.size === 0 || file.size <= 5 * 1024 * 1024,
+      `File size must be less than 5MB.`
+    )
+    .refine(
+      (file) =>
+        !file ||
+        file.size === 0 ||
+        ["image/jpeg", "image/png", "image/gif"].includes(file.type),
+      `Only .jpg, .png, and .gif formats are supported.`
+    ),
+});
+
+export async function updateProfile(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const validatedFields = profileSchema.safeParse({
+    username: formData.get("username"),
+    profile_picture: formData.get("profile_picture"),
+  });
+
+  if (!validatedFields.success) {
+    return {
+      errors: validatedFields.error.flatten().fieldErrors,
+      message: "",
+    };
+  }
+
+  const { username, profile_picture } = validatedFields.data;
+  const userMetadata: { user_name: string; avatar_url?: string } = {
+    user_name: username,
+  };
+
+  if (profile_picture && profile_picture.size > 0) {
+    const fileExt = profile_picture.name.split(".").pop();
+    const fileName = `${user.id}.${fileExt}`;
+    const { error: uploadError } = await supabase.storage
+      .from("avatars")
+      .upload(fileName, profile_picture, { upsert: true });
+
+    if (uploadError) {
+      return {
+        errors: { profile_picture: [uploadError.message] },
+        message: "",
+      };
+    }
+
+    const { data: publicUrlData } = supabase.storage
+      .from("avatars")
+      .getPublicUrl(fileName);
+
+        userMetadata.avatar_url = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`
+  }
+
+  const { error } = await supabase.auth.updateUser({
+    data: { ...user.user_metadata, ...userMetadata },
+  });
+
+  if (error) {
+    return {
+      errors: { _form: [error.message] },
+      message: "",
+    };
+  }
+
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+  return { errors: {}, message: "Profile updated successfully!" };
+}
+
 
 // Login and logout are now handled by Supabase Auth
 // These functions are kept for backward compatibility but should be replaced

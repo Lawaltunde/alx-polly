@@ -30,15 +30,28 @@ export function UserMenu() {
       <DropdownMenuTrigger>
         <Avatar>
           {/* The user's avatar image is displayed here. A fallback is used if the image is not available. */}
-          <AvatarImage src={user?.user_metadata.avatar_url} />
-          <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
+          <AvatarImage
+            src={user?.user_metadata?.avatar_url ?? undefined}
+            alt={
+              user?.user_metadata?.user_name
+                ? `${user.user_metadata.user_name} avatar`
+                : "User avatar"
+            }
+          />
+          <AvatarFallback>
+            {user?.user_metadata?.user_name?.[0]?.toUpperCase() ??
+              user?.email?.[0]?.toUpperCase() ??
+              "U"}
+          </AvatarFallback>
         </Avatar>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         {user ? (
           // If the user is authenticated, display their email and navigation links.
           <>
-            <DropdownMenuLabel>{user.email}</DropdownMenuLabel>
+            <DropdownMenuLabel>
+              {user.user_metadata.user_name ?? user.email}
+            </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/polls">Polls</Link>
