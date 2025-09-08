@@ -189,42 +189,40 @@ export async function createPoll(prevState: any, formData: FormData) {
   return { success: true, errors: {}, poll };
 }
 
-export async function handleVote(
-  pollId: string,
-  source: "dashboard" | "public",
-  formData: FormData
-) {
+export async function handleVote(formData: FormData) {
+  const pollId = formData.get("pollId") as string;
+  const selectedOptionId = formData.get("selectedOptionId") as string;
+  const source = formData.get("source") as "public" | "dashboard";
+
+  const poll = await getPoll(pollId);
+  if (!poll || poll.status === "closed") {
+    // Handle poll not found or closed
+    return;
+  }
+
+  let userId: string | undefined;
+  if (poll.require_auth) {
+    const user = await requireAuth();
+    userId = user.id;
+  }
+
   try {
-    const poll = await getPoll(pollId);
-    if (!poll || poll.status === "closed") {
-      // Handle poll not found or closed
-      return;
-    }
-
-    let userId: string | undefined;
-    if (poll.require_auth) {
-      const user = await requireAuth();
-      userId = user.id;
-    }
-
-    const selectedOptionId = formData.get("option") as string;
-    
-    // Submit vote using the new Supabase function
     await submitVoteToSupabase({
       poll_id: pollId,
       option_id: selectedOptionId,
-      user_id: userId
+      user_id: userId,
     });
-
-    if (source === "public") {
-      revalidatePath(`/p/${pollId}`);
-      redirect(`/p/${pollId}?voted=true`);
-    } else {
-      revalidatePath(`/polls/${pollId}`, "layout");
-    }
   } catch (error) {
-    console.error('Error handling vote:', error);
-    // You might want to return an error message here
+    console.error("Error submitting vote:", error);
+    // Redirect even if vote fails to avoid user being stuck, but log the error.
+  }
+
+  if (source === "public") {
+    revalidatePath(`/p/${pollId}`);
+    redirect(`/p/${pollId}?voted=true`);
+  } else {
+    revalidatePath(`/polls/${pollId}`);
+    redirect(`/polls/${pollId}`);
   }
 }
 

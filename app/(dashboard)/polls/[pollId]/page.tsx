@@ -1,11 +1,11 @@
 import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
-import { handleVote } from "@/app/lib/actions";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ShareButton from "@/app/components/ShareButton";
 import PollStatusButton from "@/app/components/shared/PollStatusButton";
 import { Settings } from "lucide-react";
+import PollVoteFormDashboard from "./poll-vote-form-dashboard";
 
 export const revalidate = 0;
 
@@ -43,20 +43,7 @@ export default async function PollPage({ params }: { params: Promise<{ pollId: s
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div>
           <h2 className="text-2xl font-bold mb-4">Options</h2>
-          <form action={handleVote.bind(null, poll.id, "dashboard")}>
-            <div className="space-y-4">
-              {poll.poll_options?.map((option) => (
-                <button
-                  key={option.id}
-                  name="option"
-                  value={option.id}
-                  className="option-button w-full text-left p-4 border rounded-lg flex justify-between items-center bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <span className="font-semibold">{option.text}</span>
-                </button>
-              ))}
-            </div>
-          </form>
+          <PollVoteFormDashboard poll={poll} />
         </div>
         <div>
           <h2 className="text-2xl font-bold mb-4">Results</h2>

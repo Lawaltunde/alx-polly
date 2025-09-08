@@ -2,12 +2,11 @@ import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import PollVoteForm from "./poll-vote-form";
 
-export default async function PublicPollPage({ 
-  params,
-}: { 
-  params: { pollId: string };
+export default async function PublicPollPage({ params }: {
+  params: Promise<{ pollId: string }>
 }) {
-  const poll = await getPoll(params.pollId);
+  const { pollId } = await params;
+  const poll = await getPoll(pollId);
 
   if (!poll) {
     notFound();

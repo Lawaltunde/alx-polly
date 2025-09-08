@@ -7,15 +7,28 @@ import { PollWithDetails, Vote } from "@/app/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type PollResultsProps = {
-  initialPoll: PollWithDetails;
+  pollId: string;
 };
 
-export default function PollResults({ initialPoll }: PollResultsProps) {
-  const [poll, setPoll] = useState<PollWithDetails>(initialPoll);
+export default function PollResults({ pollId }: PollResultsProps) {
+  const [poll, setPoll] = useState<PollWithDetails | null>(null);
   const [votes, setVotes] = useState<Vote[]>([]);
   const [totalVotes, setTotalVotes] = useState(0);
 
   useEffect(() => {
+    const fetchPoll = async () => {
+      const pollData = await getPoll(pollId);
+      setPoll(pollData);
+    };
+
+    if (pollId) {
+      fetchPoll();
+    }
+  }, [pollId]);
+
+  useEffect(() => {
+    if (!poll) return;
+
     const fetchVotes = async () => {
       const pollVotes = await getPollVotes(poll.id);
       setVotes(pollVotes);
@@ -29,7 +42,12 @@ export default function PollResults({ initialPoll }: PollResultsProps) {
       .channel(`poll_${poll.id}`)
       .on(
         "postgres_changes",
-        { event: "INSERT", schema: "public", table: "votes", filter: `poll_id=eq.${poll.id}` },
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "votes",
+          filter: `poll_id=eq.${poll.id}`,
+        },
         (payload) => {
           setVotes((currentVotes) => [...currentVotes, payload.new as Vote]);
           setTotalVotes((currentTotal) => currentTotal + 1);
@@ -40,11 +58,15 @@ export default function PollResults({ initialPoll }: PollResultsProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [poll.id]);
+  }, [poll]);
 
   const getOptionVotes = (optionId: string) => {
     return votes.filter((vote) => vote.option_id === optionId).length;
   };
+
+  if (!poll) {
+    return <div>Loading poll results...</div>;
+  }
 
   return (
     <Card>
@@ -55,7 +77,8 @@ export default function PollResults({ initialPoll }: PollResultsProps) {
         <div className="space-y-4">
           {poll.poll_options.map((option) => {
             const voteCount = getOptionVotes(option.id);
-            const percentage = totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
+            const percentage =
+              totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
             return (
               <div key={option.id} className="space-y-2">
                 <div className="flex justify-between items-center">
