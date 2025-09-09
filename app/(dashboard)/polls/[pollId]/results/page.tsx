@@ -1,14 +1,15 @@
 
 import PollResults from "@/app/components/shared/PollResults";
+import { getPoll } from "@/app/lib/supabase/queries";
+import { notFound } from "next/navigation";
 
-type PollResultsPageProps = {
-  params: {
-    pollId: string;
-  };
-};
+export default async function PollResultsPage({ params }: { params: { pollId: string } }) {
+  const { pollId } = await params;
+  const poll = await getPoll(pollId);
 
-export default async function PollResultsPage({ params }: PollResultsPageProps) {
-  const { pollId } = params;
+  if (!poll) {
+    notFound();
+  }
 
-  return <PollResults pollId={pollId} />;
+  return <PollResults pollId={pollId} initialPoll={poll} />;
 }

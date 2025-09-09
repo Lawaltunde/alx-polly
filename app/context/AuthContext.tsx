@@ -25,16 +25,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const refreshUser = useCallback(async () => {
+    await supabase.auth.refreshSession();
     const {
       data: { user },
     } = await supabase.auth.getUser();
     setUser(user);
-  }, [supabase.auth]);
+  }, [supabase]);
 
   useEffect(() => {
     const { data: authListener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
+      () => {
+        refreshUser();
       }
     );
 

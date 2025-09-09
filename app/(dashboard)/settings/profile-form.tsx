@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useFormState } from "react-dom";
@@ -16,6 +15,13 @@ import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/app/context/AuthContext";
 import { useEffect } from "react";
+
+function getErrorMessages(errors: any, field: string): string[] {
+  if (errors && typeof errors === "object" && field in errors && Array.isArray(errors[field])) {
+    return errors[field];
+  }
+  return [];
+}
 
 export function ProfileForm() {
   const [state, formAction] = useFormState(updateProfile, null);
@@ -55,9 +61,14 @@ export function ProfileForm() {
               </Avatar>
               <Input type="file" id="profile_picture" name="profile_picture" />
             </div>
-            {state?.errors?.profile_picture && (
+            {state && getErrorMessages(state.errors, 'profile_picture').length > 0 && (
               <p className="text-sm text-red-500">
-                {state.errors.profile_picture}
+                {getErrorMessages(state.errors, 'profile_picture').join(", ")}
+              </p>
+            )}
+            {state && getErrorMessages(state.errors, '_form').length > 0 && (
+              <p className="text-sm text-red-500">
+                {getErrorMessages(state.errors, '_form').join(", ")}
               </p>
             )}
           </div>
@@ -79,8 +90,8 @@ export function ProfileForm() {
               name="username"
               defaultValue={user.user_metadata.user_name}
             />
-            {state?.errors?.username && (
-              <p className="text-sm text-red-500">{state.errors.username}</p>
+            {state && getErrorMessages(state.errors, 'username').length > 0 && (
+              <p className="text-sm text-red-500">{getErrorMessages(state.errors, 'username').join(", ")}</p>
             )}
           </div>
           <Button type="submit">Update Profile</Button>

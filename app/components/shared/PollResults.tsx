@@ -8,34 +8,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 type PollResultsProps = {
   pollId: string;
+  initialPoll?: PollWithDetails;
+  onGoBack?: () => void;
 };
 
-export default function PollResults({ pollId }: PollResultsProps) {
-  const [poll, setPoll] = useState<PollWithDetails | null>(null);
+export default function PollResults({ pollId, initialPoll, onGoBack }: PollResultsProps) {
+  const [poll, setPoll] = useState<PollWithDetails | null>(initialPoll || null);
   const [votes, setVotes] = useState<Vote[]>([]);
-  const [totalVotes, setTotalVotes] = useState(0);
 
   useEffect(() => {
-    const fetchPoll = async () => {
-      const pollData = await getPoll(pollId);
-      setPoll(pollData);
+    const fetchAndSetData = async () => {
+      const pollData = initialPoll ?? (await getPoll(pollId));
+
+      if (pollData) {
+        setPoll(pollData);
+        const pollVotes = await getPollVotes(pollData.id);
+        setVotes(pollVotes);
+        console.log("Fetched votes:", pollVotes);
+      }
     };
 
-    if (pollId) {
-      fetchPoll();
-    }
-  }, [pollId]);
+    fetchAndSetData();
+  }, [pollId, initialPoll]);
 
   useEffect(() => {
     if (!poll) return;
-
-    const fetchVotes = async () => {
-      const pollVotes = await getPollVotes(poll.id);
-      setVotes(pollVotes);
-      setTotalVotes(pollVotes.length);
-    };
-
-    fetchVotes();
 
     const supabase = createClient();
     const channel = supabase
@@ -50,7 +47,6 @@ export default function PollResults({ pollId }: PollResultsProps) {
         },
         (payload) => {
           setVotes((currentVotes) => [...currentVotes, payload.new as Vote]);
-          setTotalVotes((currentTotal) => currentTotal + 1);
         }
       )
       .subscribe();
@@ -59,6 +55,8 @@ export default function PollResults({ pollId }: PollResultsProps) {
       supabase.removeChannel(channel);
     };
   }, [poll]);
+
+  const totalVotes = votes.length;
 
   const getOptionVotes = (optionId: string) => {
     return votes.filter((vote) => vote.option_id === optionId).length;
@@ -96,6 +94,12 @@ export default function PollResults({ pollId }: PollResultsProps) {
           })}
         </div>
         <p className="text-right mt-4 text-sm text-gray-500">{`Total Votes: ${totalVotes}`}</p>
+        <button
+          onClick={onGoBack}
+          className="w-full mt-4 py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+        >
+          Go Back to Voting
+        </button>
       </CardContent>
     </Card>
   );

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@/app/lib/supabase/client';
 import { PollWithDetails } from '@/app/lib/types';
-import { useRouter } from 'next/navigation';
+import PollResults from '../../components/shared/PollResults';
 
 interface PollVoteFormProps {
   poll: PollWithDetails;
@@ -11,22 +11,11 @@ interface PollVoteFormProps {
 
 export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   const [poll, setPoll] = useState(initialPoll);
-  const [totalVotes, setTotalVotes] = useState(0);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [voted, setVoted] = useState(false);
   const supabase = createClient();
-  const router = useRouter();
-
-  const calculateTotalVotes = (pollData: any) => {
-    return pollData.poll_options?.reduce((sum: number, option: any) => {
-      const count = Array.isArray(option.votes) && option.votes.length > 0 ? option.votes[0].count : 0;
-      return sum + count;
-    }, 0) || 0;
-  };
 
   useEffect(() => {
-    setPoll(initialPoll);
-    setTotalVotes(calculateTotalVotes(initialPoll));
-
     const channel = supabase
       .channel(`poll-votes-${initialPoll.id}`)
       .on(
@@ -40,7 +29,8 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
         async () => {
           const { data: updatedPollData } = await supabase
             .from('polls')
-            .select(`
+            .select(
+              `
               id,
               question,
               poll_options (
@@ -48,14 +38,14 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
                 text,
                 votes ( count )
               )
-            `)
+            `
+            )
             .eq('id', initialPoll.id)
             .single();
 
           if (updatedPollData) {
             const updatedPoll = updatedPollData as PollWithDetails;
             setPoll(updatedPoll);
-            setTotalVotes(calculateTotalVotes(updatedPoll));
           }
         }
       )
@@ -69,56 +59,65 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!selectedOption) return;
-    // Insert vote using Supabase client
     const { error } = await supabase.from('votes').insert({
       poll_id: poll.id,
       option_id: selectedOption,
     });
 
     if (!error) {
-      router.push(`/p/${poll.id}/results`);
+      setVoted(true);
     } else {
-      console.error("Error voting:", error);
+      console.error('Error voting:', error);
     }
   };
 
+  if (voted) {
+    return <PollResults pollId={poll.id} onGoBack={() => setVoted(false)} />;
+  }
+
   return (
-    <div className="w-full max-w-2xl p-6 bg-white rounded-xl shadow-lg">
-      <h1 className="text-2xl font-bold text-center mb-6">{poll.question}</h1>
-      <form onSubmit={handleSubmit}>
+    <div className="w-full max-w-2xl p-8 space-y-8 bg-white rounded-2xl shadow-lg dark:bg-gray-800">
+      <div className="text-center">
+        <h1 className="text-4xl font-bold text-gray-800 dark:text-white">{poll.question}</h1>
+        <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
+          Cast your vote by selecting one of the options below.
+        </p>
+      </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          {poll.poll_options?.map((option: any) => {
-            const voteCount = Array.isArray(option.votes) && option.votes.length > 0 ? option.votes[0].count : 0;
-            const percentage = totalVotes > 0 
-              ? Math.round((voteCount / totalVotes) * 100) 
-              : 0;
-            
-            return (
-              <div key={option.id} className="flex items-center space-x-2">
+          {poll.poll_options?.map((option: any) => (
+            <div
+              key={option.id}
+              className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
+                selectedOption === option.id
+                  ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-400 shadow-md'
+                  : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
+              }`}
+              onClick={() => setSelectedOption(option.id)}
+            >
+              <label
+                htmlFor={option.id}
+                className="flex items-center space-x-4 cursor-pointer"
+              >
                 <input
                   type="radio"
                   id={option.id}
                   name="selectedOptionId"
                   value={option.id}
+                  checked={selectedOption === option.id}
                   onChange={() => setSelectedOption(option.id)}
-                  className="radio radio-primary"
+                  className="hidden"
                 />
-                <label htmlFor={option.id} className="flex-1">
-                  <div className="flex justify-between">
-                    <span>{option.text}</span>
-                    <span>{percentage.toFixed(1)}% ({voteCount})</span>
-                  </div>
-                  <progress
-                    className="progress progress-primary w-full"
-                    value={percentage}
-                    max="100"
-                  ></progress>
-                </label>
-              </div>
-            );
-          })}
+                <span className="text-xl text-gray-700 dark:text-gray-200">{option.text}</span>
+              </label>
+            </div>
+          ))}
         </div>
-        <button type="submit" className="btn btn-primary w-full mt-6" disabled={!selectedOption}>
+        <button
+          type="submit"
+          className="w-full py-3 mt-6 text-lg font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-4 focus:ring-blue-300 disabled:bg-gray-400 disabled:cursor-not-allowed dark:bg-blue-500 dark:hover:bg-blue-600 dark:focus:ring-blue-800"
+          disabled={!selectedOption}
+        >
           Vote
         </button>
       </form>

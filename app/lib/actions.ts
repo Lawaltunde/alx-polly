@@ -346,7 +346,19 @@ export async function updateProfile(prevState: any, formData: FormData) {
       .from("avatars")
       .getPublicUrl(fileName);
 
-        userMetadata.avatar_url = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`
+    userMetadata.avatar_url = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`;
+
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({ avatar_url: userMetadata.avatar_url })
+      .eq("id", user.id);
+
+    if (profileError) {
+      return {
+        errors: { _form: [profileError.message] },
+        message: "",
+      };
+    }
   }
 
   const { error } = await supabase.auth.updateUser({
