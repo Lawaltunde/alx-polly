@@ -360,11 +360,11 @@ export async function updateProfile(prevState: any, formData: FormData) {
       .from("avatars")
       .getPublicUrl(fileName);
 
-    userMetadata.avatar_url = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`;
+    userMetadata.avatar_url = publicUrlData.publicUrl;
 
-      const { error: profileError } = await supabase
-        .from("profiles")
-        .upsert({ id: user.id, avatar_url: userMetadata.avatar_url }, { onConflict: "id" });
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .upsert({ id: user.id, avatar_url: userMetadata.avatar_url }, { onConflict: "id" });
 
     if (profileError) {
       return {

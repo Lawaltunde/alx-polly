@@ -20,12 +20,12 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold">Profile</h1>
+        <h1 className="text-2xl font-bold">Settings</h1>
         <p className="text-gray-500 dark:text-gray-400">
-          Update your profile information.
+          Manage your account settings and preferences.
         </p>
       </div>
-      <ProfileForm />
+      <ProfileForm profileAvatarUrl={profile?.avatar_url} />
     </div>
   );
 }

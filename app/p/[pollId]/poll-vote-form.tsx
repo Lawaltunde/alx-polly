@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { createClient } from '@/app/lib/supabase/client';
-import { PollWithDetails, PollOptionWithVotes } from '@/app/lib/types';
-import { useAuth } from '@/app/context/AuthContext';
+import { PollWithDetails } from '@/app/lib/types';
 import PollResults from '../../components/shared/PollResults';
 
 interface PollVoteFormProps {
@@ -11,7 +10,6 @@ interface PollVoteFormProps {
 }
 
 export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
-  const { user } = useAuth();
   const [poll, setPoll] = useState(initialPoll);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [voted, setVoted] = useState(false);
@@ -64,15 +62,11 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
     const { error } = await supabase.from('votes').insert({
       poll_id: poll.id,
       option_id: selectedOption,
-      user_id: user?.id ?? null,
-      ip_address: null,
-      user_agent: null,
     });
 
     if (!error) {
       setVoted(true);
     } else {
-      alert('Vote failed: ' + error.message);
       console.error('Error voting:', error);
     }
   };
@@ -91,7 +85,7 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
       </div>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="space-y-4">
-          {poll.poll_options?.map((option: PollOptionWithVotes) => (
+          {poll.poll_options?.map((option: any) => (
             <div
               key={option.id}
               className={`p-4 border rounded-lg cursor-pointer transition-all duration-200 ${
