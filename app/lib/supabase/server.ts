@@ -31,10 +31,12 @@ export async function createClient() {
               "You're calling a server function from a non-server environment"
             )
           ) {
-            console.error(
-              "Error setting cookie from Server Component:",
-              error
-            );
+              if (process.env.NODE_ENV === "development") {
+                console.error(
+                  "Error setting cookie from Server Component:",
+                  error
+                );
+              }
           }
         }
       },
@@ -50,10 +52,12 @@ export async function createClient() {
               "You're calling a server function from a non-server environment"
             )
           ) {
-            console.error(
-              "Error removing cookie from Server Component:",
-              error
-            );
+              if (process.env.NODE_ENV === "development") {
+                console.error(
+                  "Error removing cookie from Server Component:",
+                  error
+                );
+              }
           }
         }
       },

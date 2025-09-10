@@ -108,7 +108,9 @@ export async function createPoll(prevState: any, formData: FormData) {
       .insert({ id: user.id });
 
     if (profileError) {
-      console.error("Error creating profile in createPoll:", profileError);
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error creating profile in createPoll:", profileError);
+      }
       return {
         errors: { _form: ["Error creating your user profile."] },
         success: false,
@@ -155,7 +157,9 @@ export async function createPoll(prevState: any, formData: FormData) {
     .single();
 
   if (pollError) {
-    console.error("Poll creation error:", pollError);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Poll creation error:", pollError);
+    }
     return {
       errors: { _form: [pollError.message] },
       success: false,
@@ -176,7 +180,9 @@ export async function createPoll(prevState: any, formData: FormData) {
     .insert(pollOptions);
 
   if (optionsError) {
-    console.error("Poll options creation error:", optionsError);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Poll options creation error:", optionsError);
+    }
     // This is not transactional. If this fails, the poll is created without options.
     // For now, this is better than what was there before.
     return {
@@ -213,7 +219,9 @@ export async function handleVote(formData: FormData) {
       user_id: userId,
     });
   } catch (error) {
-    console.error("Error submitting vote:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error submitting vote:", error);
+    }
     // Redirect even if vote fails to avoid user being stuck, but log the error.
   }
 
@@ -250,7 +258,9 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
     revalidatePath(`/polls/${pollId}/settings`);
     redirect(`/polls/${pollId}`);
   } catch (error) {
-    console.error('Error updating poll:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error updating poll:', error);
+    }
     return {
       errors: { general: ['Failed to update poll. Please try again.'] }
     };
@@ -264,7 +274,9 @@ export async function deletePollAction(pollId: string) {
     revalidatePath("/polls");
     redirect("/polls");
   } catch (error) {
-    console.error("Error deleting poll:", error);
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error deleting poll:", error);
+    }
     // Redirect to polls page on error
     redirect("/polls");
   }
@@ -277,7 +289,9 @@ export async function togglePollStatus(pollId: string) {
     revalidatePath(`/polls/${pollId}`);
     revalidatePath("/polls");
   } catch (error) {
-    console.error('Error toggling poll status:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error toggling poll status:', error);
+    }
     // Redirect to polls page on error
     redirect("/polls");
   }
@@ -348,10 +362,9 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
     userMetadata.avatar_url = `${publicUrlData.publicUrl}?t=${new Date().getTime()}`;
 
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({ avatar_url: userMetadata.avatar_url })
-      .eq("id", user.id);
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({ id: user.id, avatar_url: userMetadata.avatar_url }, { onConflict: "id" });
 
     if (profileError) {
       return {

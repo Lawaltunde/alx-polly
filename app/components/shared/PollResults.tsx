@@ -2,9 +2,10 @@
 
 import { useEffect, useState } from "react";
 import { createClient } from "@/app/lib/supabase/client";
-import { getPoll, getPollVotes } from "@/app/lib/supabase/queries";
+import { getPoll, getPollOptionResults } from "@/app/lib/supabase/queries";
 import { PollWithDetails, Vote } from "@/app/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import PollChart from "./PollChart";
 
 type PollResultsProps = {
   pollId: string;
@@ -14,20 +15,22 @@ type PollResultsProps = {
 
 export default function PollResults({ pollId, initialPoll, onGoBack }: PollResultsProps) {
   const [poll, setPoll] = useState<PollWithDetails | null>(initialPoll || null);
-  const [votes, setVotes] = useState<Vote[]>([]);
+  const [optionResults, setOptionResults] = useState<Array<{ id: string; text: string; vote_count: number }>>([]);
 
   useEffect(() => {
     const fetchAndSetData = async () => {
-      const pollData = initialPoll ?? (await getPoll(pollId));
-
-      if (pollData) {
+      // Always fetch poll if missing or incomplete
+      if (!initialPoll) {
+        const pollData = await getPoll(pollId);
         setPoll(pollData);
-        const pollVotes = await getPollVotes(pollData.id);
-        setVotes(pollVotes);
-        console.log("Fetched votes:", pollVotes);
+      }
+      // Fetch poll option results from backend view
+      const results = await getPollOptionResults(pollId);
+      setOptionResults(results);
+      if (process.env.NODE_ENV === "development") {
+        console.log("Poll option results:", results);
       }
     };
-
     fetchAndSetData();
   }, [pollId, initialPoll]);
 
@@ -45,8 +48,13 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
           table: "votes",
           filter: `poll_id=eq.${poll.id}`,
         },
-        (payload) => {
-          setVotes((currentVotes) => [...currentVotes, payload.new as Vote]);
+        async () => {
+          // Re-fetch poll to update option vote counts for chart
+          const updatedPoll = await getPoll(poll.id);
+          setPoll(updatedPoll);
+          if (process.env.NODE_ENV === "development") {
+            console.log("Realtime poll fetched:", updatedPoll);
+          }
         }
       )
       .subscribe();
@@ -56,15 +64,27 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
     };
   }, [poll]);
 
-  const totalVotes = votes.length;
-
-  const getOptionVotes = (optionId: string) => {
-    return votes.filter((vote) => vote.option_id === optionId).length;
-  };
+  // Aggregate vote counts per option in the frontend
+  let totalVotes = 0;
+  if (optionResults && optionResults.length > 0) {
+    totalVotes = optionResults.reduce((sum, opt) => sum + (opt.vote_count || 0), 0);
+  }
 
   if (!poll) {
     return <div>Loading poll results...</div>;
   }
+
+  // Data validation and error surfacing
+  if (!poll.poll_options || poll.poll_options.length === 0) {
+    return <div className="text-red-500">Error: No poll options found for this poll.</div>;
+  }
+  // No votes logic needed; results come from backend aggregation
+
+  const chartOptions = optionResults.map(option => ({
+    id: option.id,
+    text: option.text,
+    votes: option.vote_count ?? 0
+  }));
 
   return (
     <Card>
@@ -72,33 +92,13 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
         <CardTitle>{poll.question}</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {poll.poll_options.map((option) => {
-            const voteCount = getOptionVotes(option.id);
-            const percentage =
-              totalVotes > 0 ? (voteCount / totalVotes) * 100 : 0;
-            return (
-              <div key={option.id} className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span>{option.text}</span>
-                  <span>{`${voteCount} vote(s)`}</span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700">
-                  <div
-                    className="bg-blue-600 h-4 rounded-full"
-                    style={{ width: `${percentage}%` }}
-                  ></div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <PollChart options={chartOptions} totalVotes={totalVotes} />
         <p className="text-right mt-4 text-sm text-gray-500">{`Total Votes: ${totalVotes}`}</p>
         <button
-          onClick={onGoBack}
+          onClick={onGoBack ?? (() => window.location.href = '/polls')}
           className="w-full mt-4 py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
         >
-          Go Back to Voting
+          Go Back to Polls
         </button>
       </CardContent>
     </Card>

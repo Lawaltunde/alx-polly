@@ -29,7 +29,9 @@ export async function generatePollQRCode(pollId: string, baseUrl: string) {
       });
 
     if (error) {
-      console.error('Error storing QR code:', error);
+      if (process.env.NODE_ENV === "development") {
+        console.error('Error storing QR code:', error);
+      }
       throw new Error('Failed to store QR code');
     }
 
@@ -39,7 +41,9 @@ export async function generatePollQRCode(pollId: string, baseUrl: string) {
       pollUrl
     };
   } catch (error) {
-    console.error('Error generating QR code:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error generating QR code:', error);
+    }
     throw new Error('Failed to generate QR code');
   }
 }
@@ -58,7 +62,9 @@ export async function getPollByShortCode(shortCode: string) {
     if (qrError.code === 'PGRST116') {
       return null; // QR code not found
     }
-    console.error('Error fetching QR code:', qrError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching QR code:', qrError);
+    }
     throw new Error('Failed to fetch QR code');
   }
 
@@ -85,7 +91,9 @@ export async function getPollByShortCode(shortCode: string) {
     .single();
 
   if (pollError) {
-    console.error('Error fetching poll:', pollError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching poll:', pollError);
+    }
     throw new Error('Failed to fetch poll');
   }
 
@@ -105,7 +113,9 @@ export async function getPollQRCode(pollId: string) {
     if (error.code === 'PGRST116') {
       return null; // QR code not found
     }
-    console.error('Error fetching QR code:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching QR code:', error);
+    }
     throw new Error('Failed to fetch QR code');
   }
 
@@ -121,7 +131,9 @@ export async function deletePollQRCode(pollId: string) {
     .eq('poll_id', pollId);
 
   if (error) {
-    console.error('Error deleting QR code:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error deleting QR code:', error);
+    }
     throw new Error('Failed to delete QR code');
   }
 }
@@ -145,7 +157,9 @@ export async function generateDownloadableQRCode(pollUrl: string, filename: stri
       mimeType: 'image/png'
     };
   } catch (error) {
-    console.error('Error generating downloadable QR code:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error generating downloadable QR code:', error);
+    }
     throw new Error('Failed to generate downloadable QR code');
   }
 }
@@ -182,7 +196,9 @@ export async function generateStyledQRCode(
 
     return qrCodeDataUrl;
   } catch (error) {
-    console.error('Error generating styled QR code:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error generating styled QR code:', error);
+    }
     throw new Error('Failed to generate styled QR code');
   }
 }

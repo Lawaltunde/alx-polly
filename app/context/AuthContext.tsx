@@ -25,11 +25,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
 
   const refreshUser = useCallback(async () => {
-    await supabase.auth.refreshSession();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    setUser(user);
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      setUser(user);
+    } catch (error) {
+      // Replace with a non-noisy logger if available
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error fetching user:", error);
+      }
+    }
   }, [supabase]);
 
   useEffect(() => {

@@ -1,3 +1,18 @@
+// Fetch poll option results from view
+export async function getPollOptionResults(pollId: string) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('poll_option_results')
+    .select('id, text, vote_count')
+    .eq('poll_id', pollId);
+  if (error) {
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching poll option results:', error);
+    }
+    return [];
+  }
+  return data || [];
+}
 /**
  * This file contains all the queries related to polls, votes, and poll options.
  * It provides a centralized and consistent way to interact with the database
@@ -49,7 +64,9 @@ export async function getPolls(): Promise<PollWithDetails[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching polls:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching polls:', error);
+    }
     throw new Error('Failed to fetch polls');
   }
 
@@ -77,7 +94,7 @@ export async function getPoll(id: string): Promise<PollWithDetails | null> {
         id,
         text,
         order_index,
-        votes ( count )
+        votes:votes(count)
       ),
       profiles (
         id,
@@ -95,7 +112,9 @@ export async function getPoll(id: string): Promise<PollWithDetails | null> {
     if (error.code === 'PGRST116') { // PGRST116 is the code for "Not Found"
       return null;
     }
-    console.error('Error fetching poll:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching poll:', error);
+    }
     throw new Error('Failed to fetch poll');
   }
 
@@ -132,7 +151,9 @@ export async function createPoll(pollData: CreatePollData, userId: string): Prom
     .single();
 
   if (pollError) {
-    console.error('Error creating poll:', pollError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error creating poll:', pollError);
+    }
     throw new Error('Failed to create poll');
   }
 
@@ -151,7 +172,9 @@ export async function createPoll(pollData: CreatePollData, userId: string): Prom
     // If creating the options fails, we should ideally roll back the poll creation.
     // However, Supabase doesn't support transactions in this way through the client library.
     // A more robust solution would be to use a database function (stored procedure).
-    console.error('Error creating poll options:', optionsError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error creating poll options:', optionsError);
+    }
     throw new Error('Failed to create poll options');
   }
 
@@ -204,7 +227,9 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
     .single();
 
   if (updateError) {
-    console.error('Error updating poll:', updateError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error updating poll:', updateError);
+    }
     throw new Error('Failed to update poll');
   }
 
@@ -230,7 +255,9 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
       .insert(options);
 
     if (optionsError) {
-      console.error('Error updating poll options:', optionsError);
+      if (process.env.NODE_ENV === "development") {
+        console.error('Error updating poll options:', optionsError);
+      }
       throw new Error('Failed to update poll options');
     }
   }
@@ -276,7 +303,9 @@ export async function deletePoll(pollId: string, userId: string): Promise<void> 
     .eq('id', pollId);
 
   if (deleteError) {
-    console.error('Error deleting poll:', deleteError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error deleting poll:', deleteError);
+    }
     throw new Error('Failed to delete poll');
   }
 }
@@ -336,7 +365,9 @@ export async function submitVote(voteData: VoteData): Promise<void> {
     });
 
   if (voteError) {
-    console.error('Error submitting vote:', voteError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error submitting vote:', voteError);
+    }
     throw new Error('Failed to submit vote');
   }
 }
@@ -381,7 +412,9 @@ export async function togglePollStatus(pollId: string, userId: string): Promise<
     .single();
 
   if (updateError) {
-    console.error('Error toggling poll status:', updateError);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error toggling poll status:', updateError);
+    }
     throw new Error('Failed to toggle poll status');
   }
 
@@ -420,7 +453,9 @@ export async function getUserPolls(userId: string): Promise<PollWithDetails[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching user polls:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching user polls:', error);
+    }
     throw new Error('Failed to fetch user polls');
   }
 
@@ -448,7 +483,9 @@ export async function getPollVotes(pollId: string): Promise<Vote[]> {
     .order('created_at', { ascending: false });
 
   if (error) {
-    console.error('Error fetching poll votes:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching poll votes:', error);
+    }
     throw new Error('Failed to fetch poll votes');
   }
 
@@ -464,13 +501,16 @@ export async function getPollVotes(pollId: string): Promise<Vote[]> {
  */
 export async function getPollResults(pollId: string) {
   const supabase = await createClient();
+  // Aggregate vote counts per option using join and group by
   const { data, error } = await supabase
-    .from('votes')
-    .select('option_id')
+    .from('poll_options')
+    .select('id, text, votes:votes(count)')
     .eq('poll_id', pollId);
 
   if (error) {
-    console.error('Error fetching poll results:', error);
+    if (process.env.NODE_ENV === "development") {
+      console.error('Error fetching poll results:', error);
+    }
     return null;
   }
 
