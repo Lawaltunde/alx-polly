@@ -72,7 +72,7 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   };
 
   if (voted) {
-    return <PollResults pollId={poll.id} onGoBack={() => setVoted(false)} />;
+    return <PollResults pollId={poll.id} initialPoll={poll} onGoBack={() => setVoted(false)} />;
   }
 
   return (

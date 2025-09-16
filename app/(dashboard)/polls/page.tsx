@@ -1,30 +1,12 @@
-"use client";
-
+export const dynamic = "force-dynamic";
 import { getPolls } from "@/app/lib/supabase/queries";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { useEffect, useState } from "react";
-import { PollWithDetails } from "@/app/lib/types";
 
-export default function PollsPage() {
-  const [polls, setPolls] = useState<PollWithDetails[]>([]);
-
-  useEffect(() => {
-    const fetchPolls = async () => {
-      try {
-        const pollsData = await getPolls();
-        setPolls(pollsData);
-      } catch (error) {
-        console.error(error);
-        setPolls([]);
-      }
-    };
-
-    fetchPolls();
-  }, []);
-
+export default async function PollsPage() {
+  const polls = await getPolls();
 
   return (
     <div className="space-y-8">
@@ -38,7 +20,7 @@ export default function PollsPage() {
           </Button>
         </Link>
       </div>
-      {polls.length > 0 ? (
+  {polls && polls.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Map over the array of polls and render a card for each one. */}
           {polls.map((poll) => (

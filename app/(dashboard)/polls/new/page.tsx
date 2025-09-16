@@ -80,8 +80,8 @@ export default function NewPollPage() {
                 placeholder="What's your favorite color?"
                 className="mt-1"
               />
-              {state.errors?.question && (
-                <p className="text-sm text-red-500">{state.errors.question}</p>
+              {"question" in state.errors && Array.isArray((state.errors as any).question) && (
+                <p className="text-sm text-red-500">{(state.errors as any).question.join(", ")}</p>
               )}
             </div>
             <div className="space-y-2">
@@ -107,9 +107,9 @@ export default function NewPollPage() {
                   </div>
                 ))}
               </div>
-              {state.errors?.options && (
+              {"options" in state.errors && Array.isArray((state.errors as any).options) && (
                 <p className="text-sm text-red-500">
-                  {state.errors.options.filter((o) => o).join(", ")}
+                  {(state.errors as any).options.filter((o: string) => o).join(", ")}
                 </p>
               )}
             </div>

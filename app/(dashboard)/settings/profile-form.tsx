@@ -1,7 +1,8 @@
 "use client";
-
+import React, { useEffect, useState } from "react";
 import { useFormState } from "react-dom";
 import { updateProfile } from "@/app/lib/actions";
+import { deleteAccountAction } from "./delete-account-action";
 import {
   Card,
   CardContent,
@@ -15,8 +16,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/app/context/AuthContext";
-import { useEffect, useState } from "react";
-import React from "react";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 
@@ -37,7 +36,7 @@ export function ProfileForm({
 }: {
   profileAvatarUrl?: string;
 }) {
-  const [state, formAction] = useFormState(updateProfile, null);
+  const [state, formAction] = React.useActionState(updateProfile, null);
   const { user, refreshUser } = useAuth();
   const [fileError, setFileError] = useState<string | null>(null);
 
@@ -78,27 +77,46 @@ export function ProfileForm({
             ) : (
               <>
                 <div className="space-y-2">
-                  <Label htmlFor="username">Username</Label>
+                  <Label htmlFor="first_name">First Name</Label>
                   <Input
                     type="text"
-                    id="username"
-                    name="username"
-                    defaultValue={user?.user_metadata?.user_name || ""}
+                    id="first_name"
+                    name="first_name"
+                    defaultValue={user?.user_metadata?.first_name || ""}
                   />
-                  {state && getErrorMessages(state.errors, "username").length > 0 && (
+                  {state && getErrorMessages(state.errors, "first_name").length > 0 && (
                     <p className="text-sm text-red-500">
-                      {getErrorMessages(state.errors, "username").join(", ")}
+                      {getErrorMessages(state.errors, "first_name").join(", ")}
                     </p>
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="bio">Bio</Label>
-                  <Textarea
-                    id="bio"
-                    name="bio"
-                    placeholder="Tell us a little about yourself"
-                    defaultValue={user?.user_metadata?.bio || ""}
+                  <Label htmlFor="last_name">Last Name</Label>
+                  <Input
+                    type="text"
+                    id="last_name"
+                    name="last_name"
+                    defaultValue={user?.user_metadata?.last_name || ""}
                   />
+                  {state && getErrorMessages(state.errors, "last_name").length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {getErrorMessages(state.errors, "last_name").join(", ")}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email">Gmail Address</Label>
+                  <Input
+                    type="email"
+                    id="email"
+                    name="email"
+                    defaultValue={user?.email || ""}
+                  />
+                  {state && getErrorMessages(state.errors, "email").length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {getErrorMessages(state.errors, "email").join(", ")}
+                    </p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="profile_picture">Profile Picture</Label>
@@ -143,11 +161,25 @@ export function ProfileForm({
                       </p>
                     )}
                 </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password">New Password</Label>
+                  <Input
+                    type="password"
+                    id="password"
+                    name="password"
+                    placeholder="Enter new password"
+                  />
+                  {state && getErrorMessages(state.errors, "password").length > 0 && (
+                    <p className="text-sm text-red-500">
+                      {getErrorMessages(state.errors, "password").join(", ")}
+                    </p>
+                  )}
+                </div>
               </>
             )}
           </CardContent>
           <CardFooter>
-            <Button type="submit">Update Profile</Button>
+            <Button type="submit">Save</Button>
           </CardFooter>
         </form>
       </Card>
@@ -177,28 +209,7 @@ export function ProfileForm({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Notifications</CardTitle>
-          <CardDescription>
-            Manage your notification preferences.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between">
-            <Label htmlFor="email_notifications">Email Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive emails about your account activity.
-            </p>
-          </div>
-          <div className="flex items-center justify-between">
-            <Label htmlFor="push_notifications">Push Notifications</Label>
-            <p className="text-sm text-muted-foreground">
-              Receive push notifications on your devices.
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+  {/* Notifications card removed as it was non-functional */}
 
       <Card>
         <CardHeader>
@@ -225,7 +236,9 @@ export function ProfileForm({
                 Permanently delete your account and all associated data.
               </p>
             </div>
-            <Button variant="destructive">Delete Account</Button>
+            <form action={deleteAccountAction} method="post">
+              <Button variant="destructive" type="submit">Delete Account</Button>
+            </form>
           </div>
         </CardContent>
       </Card>

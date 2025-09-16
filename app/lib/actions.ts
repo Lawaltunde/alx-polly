@@ -1,5 +1,21 @@
 "use server";
 
+export async function deleteAccountAction() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+  // Delete from profiles table
+  await supabase.from("profiles").delete().eq("id", user.id);
+  // Delete user from auth (requires service role key)
+  // If you have access to admin API:
+  // await supabase.auth.admin.deleteUser(user.id);
+  // For client-side, sign out user
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 import { z } from "zod";
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
@@ -267,18 +283,31 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
   }
 }
 
-export async function deletePollAction(pollId: string) {
+export async function deletePollAction(formData: FormData) {
+  // Log all cookies to debug session/auth issues
+  const { cookies } = await import("next/headers");
+  const allCookies = await cookies();
+  console.log("[DEBUG] All cookies:", allCookies.getAll());
+  const pollId = formData.get("pollId") as string;
+  console.log("[DEBUG] Delete poll action called");
+  const user = await requireAuth();
+  console.log("[DEBUG] deletePollAction: pollId=", pollId, "userId=", user.id, "user:", user);
   try {
+  const { createServerActionClient } = await import("@supabase/auth-helpers-nextjs");
+  const { cookies } = await import("next/headers");
+  const supabase = createServerActionClient({ cookies });
     const user = await requireAuth();
-    await deletePoll(pollId, user.id);
+    console.log("[DEBUG] deletePollAction: pollId=", pollId, "userId=", user.id, "user:", user);
+    const result = await (await import("@/app/lib/supabase/queries")).deletePoll(supabase, pollId, user.id);
+    console.log("[DEBUG] Supabase deletePoll result:", result);
     revalidatePath("/polls");
     redirect("/polls");
-  } catch (error) {
-    if (process.env.NODE_ENV === "development") {
-      console.error("Error deleting poll:", error);
+  } catch (error: any) {
+    if (error && error.digest && String(error.digest).startsWith('NEXT_REDIRECT')) {
+      throw error;
     }
-    // Redirect to polls page on error
-    redirect("/polls");
+    console.error("[ERROR] Poll deletion failed:", error);
+    return;
   }
 }
 

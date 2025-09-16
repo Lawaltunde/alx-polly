@@ -1,6 +1,7 @@
 import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import { deletePollAction } from "@/app/lib/actions";
+import { useFormState } from "react-dom";
 import { Button } from "@/components/ui/button";
 import EditPollForm from "@/app/components/shared/EditPollForm";
 
@@ -24,8 +25,9 @@ export default async function PollSettingsPage({ params }: { params: Promise<{ p
         <p className="text-gray-500 dark:text-gray-400 mb-4">
           This action is irreversible. Please be certain before deleting this poll.
         </p>
-        <form action={deletePollAction.bind(null, poll.id)}>
-          <Button variant="destructive">Delete Poll</Button>
+  <form action={deletePollAction}>
+          <input type="hidden" name="pollId" value={poll.id} />
+          <Button variant="destructive" type="submit">Delete Poll</Button>
         </form>
       </div>
     </div>

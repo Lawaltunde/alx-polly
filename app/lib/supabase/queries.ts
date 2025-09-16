@@ -277,9 +277,8 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
  * @returns {Promise<void>} A promise that resolves when the poll is deleted.
  * @throws {Error} If the poll is not found, the user is not authorized, or the deletion fails.
  */
-export async function deletePoll(pollId: string, userId: string): Promise<void> {
-  const supabase = await createClient();
-  
+export async function deletePoll(supabase: any, pollId: string, userId: string): Promise<void> {
+  console.log("deletePoll called with pollId:", pollId, "userId:", userId);
   // Verify ownership before allowing deletion.
   const { data: poll, error: fetchError } = await supabase
     .from('polls')
@@ -288,26 +287,31 @@ export async function deletePoll(pollId: string, userId: string): Promise<void> 
     .single();
 
   if (fetchError || !poll) {
+    console.error('Poll not found or fetch error:', fetchError);
     throw new Error('Poll not found');
   }
 
   if (poll.created_by !== userId) {
+    console.error('Unauthorized to delete this poll. poll.created_by:', poll.created_by, 'userId:', userId);
     throw new Error('Unauthorized to delete this poll');
   }
 
   // Delete the poll. The database schema is set up with cascading deletes,
   // so this will also remove all related poll_options, votes, and poll_qr_codes.
-  const { error: deleteError } = await supabase
+  const deleteResult = await supabase
     .from('polls')
     .delete()
     .eq('id', pollId);
 
-  if (deleteError) {
-    if (process.env.NODE_ENV === "development") {
-      console.error('Error deleting poll:', deleteError);
-    }
+  console.log('[DEBUG] Supabase delete response:', deleteResult);
+  if (deleteResult.error) {
+    console.error('[ERROR] Error deleting poll:', deleteResult.error);
     throw new Error('Failed to delete poll');
   }
+  if (deleteResult.data && deleteResult.data.length === 0) {
+    console.warn('[WARN] Delete returned empty data array. Poll may not have been deleted.');
+  }
+  console.log("Poll deleted successfully:", pollId);
 }
 
 /**
