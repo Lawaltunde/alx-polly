@@ -1,12 +1,20 @@
 export const dynamic = "force-dynamic";
 import { getPolls } from "@/app/lib/supabase/queries";
+import type { PollWithDetails, PollOptionWithVotes } from "@/app/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-
 export default async function PollsPage() {
-  const polls = await getPolls();
+  let polls: PollWithDetails[] = [];
+  let fetchError: unknown = null;
+  try {
+    polls = await getPolls();
+  } catch (error) {
+    // Log error to server console for observability
+    console.error("Failed to fetch polls:", error);
+    fetchError = error;
+  }
 
   return (
     <div className="space-y-8">
@@ -20,7 +28,14 @@ export default async function PollsPage() {
           </Button>
         </Link>
       </div>
-  {polls && polls.length > 0 ? (
+      {fetchError ? (
+        <div className="flex flex-col items-center justify-center text-center py-20">
+          <h2 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">Error Loading Polls</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
+            Sorry, we couldn't load polls at this time. Please try again later.
+          </p>
+        </div>
+      ) : polls && polls.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Map over the array of polls and render a card for each one. */}
           {polls.map((poll) => (
@@ -33,7 +48,7 @@ export default async function PollsPage() {
                 </CardHeader>
                 <CardContent>
                   <p className="text-gray-600 dark:text-gray-400">
-                    {poll.poll_options?.map((o) => o.text).join(", ") || "No options"}
+                    {(poll.poll_options as PollOptionWithVotes[] | undefined)?.map((o: PollOptionWithVotes) => o.text).join(", ") || "No options"}
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                     {poll.poll_options?.length || 0} options

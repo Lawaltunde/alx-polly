@@ -1,17 +1,127 @@
 "use server";
+import { createClient } from "./supabase/server";
+// --- Profile Update Action ---
+import { uploadProfilePicture } from "./supabase/storage";
+const profileUpdateSchema = z.object({
+  first_name: z.string().min(1, "First name is required").max(50),
+  last_name: z.string().min(1, "Last name is required").max(50),
+  email: z.string().email("Must be a valid Gmail address").regex(/@gmail\.com$/, "Must be a Gmail address"),
+  current_password: z.string().min(1, "Current password is required"),
+  profile_picture: z.any().optional(),
+});
+
+export async function updateProfile(prevState: any, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user || !user.email) {
+    return { errors: { _form: ["Not authenticated or missing email."] } };
+  }
+
+  // Parse and validate form data
+  const values = {
+    first_name: formData.get("first_name")?.toString() || "",
+    last_name: formData.get("last_name")?.toString() || "",
+    email: formData.get("email")?.toString() || "",
+    current_password: formData.get("current_password")?.toString() || "",
+    profile_picture: formData.get("profile_picture"),
+  };
+  const validated = profileUpdateSchema.safeParse(values);
+  if (!validated.success) {
+    return { errors: validated.error.flatten().fieldErrors };
+  }
+  const { first_name, last_name, email, current_password, profile_picture } = validated.data;
+
+  // Verify current password before allowing sensitive changes
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email: user.email as string,
+    password: current_password,
+  });
+  if (signInError) {
+    return { errors: { current_password: ["Current password is incorrect."] } };
+  }
+
+  // Update profile picture if provided
+  let avatar_url = user.user_metadata?.avatar_url;
+  if (profile_picture && typeof profile_picture !== "string") {
+    try {
+      avatar_url = await uploadProfilePicture(user.id, profile_picture as File);
+    } catch (e: any) {
+      return { errors: { profile_picture: [e.message] } };
+    }
+  }
+
+  // Update user metadata/profile
+  const { error: profileError } = await supabase.from("profiles").update({
+    first_name,
+    last_name,
+    avatar_url,
+  }).eq("id", user.id);
+  if (profileError) {
+    return { errors: { _form: [profileError.message] } };
+  }
+
+  // Update email if changed
+  if (email && email !== user.email) {
+    const { error: emailError } = await supabase.auth.updateUser({ email });
+    if (emailError) {
+      return { errors: { email: [emailError.message] } };
+    }
+  }
+
+  // Success: redirect to dashboard
+  revalidatePath("/dashboard");
+  redirect("/dashboard");
+}
 
 export async function deleteAccountAction() {
   const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data, error } = await supabase.auth.getUser();
+    if (error) {
+      if (process.env.NODE_ENV === "development") {
+        console.error("Error getting user in deleteAccountAction:", error);
+      }
+      redirect("/login");
+    }
+    user = data?.user;
+  } catch (err) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Exception in getUser in deleteAccountAction:", err);
+    }
+    redirect("/login");
+  }
   if (!user) {
     redirect("/login");
   }
-  // Delete from profiles table
-  await supabase.from("profiles").delete().eq("id", user.id);
-  // Delete user from auth (requires service role key)
-  // If you have access to admin API:
-  // await supabase.auth.admin.deleteUser(user.id);
-  // For client-side, sign out user
+
+  // Delete related data: votes, polls, etc. (add more as needed)
+  // Delete votes
+  const { error: votesError } = await supabase.from("votes").delete().eq("user_id", user.id);
+  if (votesError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error deleting votes:", votesError);
+    }
+    throw new Error("Failed to delete votes. Aborting account deletion.");
+  }
+  // Delete polls
+  const { error: pollsError } = await supabase.from("polls").delete().eq("created_by", user.id);
+  if (pollsError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error deleting polls:", pollsError);
+    }
+    throw new Error("Failed to delete polls. Aborting account deletion.");
+  }
+  // Delete profile
+  const { error: profileError } = await supabase.from("profiles").delete().eq("id", user.id);
+  if (profileError) {
+    if (process.env.NODE_ENV === "development") {
+      console.error("Error deleting profile:", profileError);
+    }
+    throw new Error("Failed to delete profile. Aborting account deletion.");
+  }
+
+  // Sign out user only after successful cleanup
   await supabase.auth.signOut();
   redirect("/login");
 }
@@ -30,7 +140,7 @@ import {
 } from "./supabase/queries";
 import { getCurrentUser, requireAuth } from "./auth";
 import { generatePollQRCode } from "./qr-code";
-import { createClient } from "./supabase/server";
+
 
 const loginSchema = z.object({
   email: z.string().email("Invalid email address"),
@@ -284,30 +394,26 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
 }
 
 export async function deletePollAction(formData: FormData) {
-  // Log all cookies to debug session/auth issues
-  const { cookies } = await import("next/headers");
-  const allCookies = await cookies();
-  console.log("[DEBUG] All cookies:", allCookies.getAll());
   const pollId = formData.get("pollId") as string;
-  console.log("[DEBUG] Delete poll action called");
   const user = await requireAuth();
-  console.log("[DEBUG] deletePollAction: pollId=", pollId, "userId=", user.id, "user:", user);
   try {
-  const { createServerActionClient } = await import("@supabase/auth-helpers-nextjs");
-  const { cookies } = await import("next/headers");
-  const supabase = createServerActionClient({ cookies });
-    const user = await requireAuth();
-    console.log("[DEBUG] deletePollAction: pollId=", pollId, "userId=", user.id, "user:", user);
+    // Minimal debug for entry
+    if (process.env.NODE_ENV === "development") {
+      console.debug(`[deletePollAction] Attempting to delete poll: ${pollId} for user: ${user.id}`);
+    }
+    const { createServerActionClient } = await import("@supabase/auth-helpers-nextjs");
+    const { cookies } = await import("next/headers");
+    const supabase = createServerActionClient({ cookies });
     const result = await (await import("@/app/lib/supabase/queries")).deletePoll(supabase, pollId, user.id);
-    console.log("[DEBUG] Supabase deletePoll result:", result);
     revalidatePath("/polls");
     redirect("/polls");
   } catch (error: any) {
     if (error && error.digest && String(error.digest).startsWith('NEXT_REDIRECT')) {
       throw error;
     }
-    console.error("[ERROR] Poll deletion failed:", error);
-    return;
+    // Log concise error and rethrow for framework feedback
+    console.error("Poll deletion failed:", error);
+    throw new Error("Failed to delete poll. Please try again.");
   }
 }
 
@@ -325,100 +431,6 @@ export async function togglePollStatus(pollId: string) {
     redirect("/polls");
   }
 }
-
-const profileSchema = z.object({
-  username: z.string().min(3, "Username must be at least 3 characters"),
-  profile_picture: z
-    .instanceof(File)
-    .optional()
-    .refine(
-      (file) => !file || file.size === 0 || file.size <= 5 * 1024 * 1024,
-      `File size must be less than 5MB.`
-    )
-    .refine(
-      (file) =>
-        !file ||
-        file.size === 0 ||
-        ["image/jpeg", "image/png", "image/gif"].includes(file.type),
-      `Only .jpg, .png, and .gif formats are supported.`
-    ),
-});
-
-export async function updateProfile(prevState: any, formData: FormData) {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    redirect("/login");
-  }
-
-  const validatedFields = profileSchema.safeParse({
-    username: formData.get("username"),
-    profile_picture: formData.get("profile_picture"),
-  });
-
-  if (!validatedFields.success) {
-    return {
-      errors: validatedFields.error.flatten().fieldErrors,
-      message: "",
-    };
-  }
-
-  const { username, profile_picture } = validatedFields.data;
-  const userMetadata: { user_name: string; avatar_url?: string } = {
-    user_name: username,
-  };
-
-  if (profile_picture && profile_picture.size > 0) {
-    const fileExt = profile_picture.name.split(".").pop();
-    const fileName = `${user.id}.${fileExt}`;
-    const { error: uploadError } = await supabase.storage
-      .from("avatars")
-      .upload(fileName, profile_picture, { upsert: true });
-
-    if (uploadError) {
-      return {
-        errors: { profile_picture: [uploadError.message] },
-        message: "",
-      };
-    }
-
-    const { data: publicUrlData } = supabase.storage
-      .from("avatars")
-      .getPublicUrl(fileName);
-
-    userMetadata.avatar_url = publicUrlData.publicUrl;
-
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .upsert({ id: user.id, avatar_url: userMetadata.avatar_url }, { onConflict: "id" });
-
-    if (profileError) {
-      return {
-        errors: { _form: [profileError.message] },
-        message: "",
-      };
-    }
-  }
-
-  const { error } = await supabase.auth.updateUser({
-    data: { ...user.user_metadata, ...userMetadata },
-  });
-
-  if (error) {
-    return {
-      errors: { _form: [error.message] },
-      message: "",
-    };
-  }
-
-  revalidatePath("/settings");
-  revalidatePath("/", "layout");
-  return { errors: {}, message: "Profile updated successfully!" };
-}
-
 
 // Login and logout are now handled by Supabase Auth
 // These functions are kept for backward compatibility but should be replaced

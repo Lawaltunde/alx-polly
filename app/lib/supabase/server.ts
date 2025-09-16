@@ -14,7 +14,11 @@ if (!supabaseAnonKey) {
 
 export async function createClient() {
   const cookieStore = await cookies();
-  console.log("[DEBUG] createClient - All cookies:", cookieStore.getAll());
+  if (process.env.NODE_ENV === "development") {
+    // Only log cookie names, never values
+    const cookieNames = cookieStore.getAll().map((c) => c.name);
+    console.debug("[dev] createClient - Cookie names:", cookieNames);
+  }
   return createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       get(name: string) {

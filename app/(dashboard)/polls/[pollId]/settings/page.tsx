@@ -1,7 +1,7 @@
 import { getPoll } from "@/app/lib/supabase/queries";
 import { notFound } from "next/navigation";
 import { deletePollAction } from "@/app/lib/actions";
-import { useFormState } from "react-dom";
+
 import { Button } from "@/components/ui/button";
 import EditPollForm from "@/app/components/shared/EditPollForm";
 

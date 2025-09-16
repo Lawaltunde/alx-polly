@@ -1,8 +1,9 @@
 "use client";
 import React, { useEffect, useState } from "react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "../../../components/ui/dialog";
 import { useFormState } from "react-dom";
 import { updateProfile } from "@/app/lib/actions";
-import { deleteAccountAction } from "./delete-account-action";
+// import { deleteAccountAction } from "./delete-account-action";
 import {
   Card,
   CardContent,
@@ -30,18 +31,59 @@ function getErrorMessages(errors: any, field: string): string[] {
   }
   return [];
 }
-
-export function ProfileForm({
-  profileAvatarUrl,
-}: {
-  profileAvatarUrl?: string;
-}) {
+export function ProfileForm({ profileAvatarUrl }: { profileAvatarUrl?: string }) {
   const [state, formAction] = React.useActionState(updateProfile, null);
   const { user, refreshUser } = useAuth();
   const [fileError, setFileError] = useState<string | null>(null);
 
+  // Change password modal state and logic
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changePwError, setChangePwError] = useState<string | null>(null);
+  const [changePwLoading, setChangePwLoading] = useState(false);
+
+  async function handleChangePassword(e: React.FormEvent) {
+    e.preventDefault();
+    setChangePwError(null);
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setChangePwError("All fields are required.");
+      return;
+    }
+    if (newPassword.length < 8) {
+      setChangePwError("New password must be at least 8 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setChangePwError("Passwords do not match.");
+      return;
+    }
+    setChangePwLoading(true);
+    try {
+      const res = await fetch("/api/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setChangePwError(data.error || "Failed to change password.");
+      } else {
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setShowChangePassword(false);
+      }
+    } catch (err: any) {
+      setChangePwError("Unexpected error. Please try again.");
+    } finally {
+      setChangePwLoading(false);
+    }
+  }
+
   useEffect(() => {
-    if (state?.message) {
+    if (state && (!state.errors || Object.keys(state.errors).length === 0)) {
       refreshUser();
     }
   }, [state, refreshUser]);
@@ -105,10 +147,10 @@ export function ProfileForm({
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">Gmail Address</Label>
+                  <Label htmlFor="gmail">Gmail Address</Label>
                   <Input
                     type="email"
-                    id="email"
+                    id="gmail"
                     name="email"
                     defaultValue={user?.email || ""}
                   />
@@ -162,16 +204,16 @@ export function ProfileForm({
                     )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password">New Password</Label>
+                  <Label htmlFor="current_password">Current Password</Label>
                   <Input
                     type="password"
-                    id="password"
-                    name="password"
-                    placeholder="Enter new password"
+                    id="current_password"
+                    name="current_password"
+                    placeholder="Enter your current password to save changes"
                   />
-                  {state && getErrorMessages(state.errors, "password").length > 0 && (
+                  {state && getErrorMessages(state.errors, "current_password").length > 0 && (
                     <p className="text-sm text-red-500">
-                      {getErrorMessages(state.errors, "password").join(", ")}
+                      {getErrorMessages(state.errors, "current_password").join(", ")}
                     </p>
                   )}
                 </div>
@@ -193,10 +235,10 @@ export function ProfileForm({
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="account-email">Email</Label>
             <Input
               type="email"
-              id="email"
+              id="account-email"
               name="email"
               defaultValue={user?.email || ""}
               disabled
@@ -204,8 +246,33 @@ export function ProfileForm({
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>
-            <Button variant="outline">Change Password</Button>
+            <Button variant="outline" type="button" onClick={() => setShowChangePassword(true)}>Change Password</Button>
           </div>
+          <Dialog open={showChangePassword} onOpenChange={setShowChangePassword}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Change Password</DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleChangePassword} className="space-y-4">
+                <div>
+                  <Label htmlFor="current-password">Current Password</Label>
+                  <Input id="current-password" type="password" value={currentPassword} onChange={e => setCurrentPassword(e.target.value)} required />
+                </div>
+                <div>
+                  <Label htmlFor="new-password">New Password</Label>
+                  <Input id="new-password" type="password" value={newPassword} onChange={e => setNewPassword(e.target.value)} required minLength={8} />
+                </div>
+                <div>
+                  <Label htmlFor="confirm-password">Confirm New Password</Label>
+                  <Input id="confirm-password" type="password" value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} required minLength={8} />
+                </div>
+                {changePwError && <p className="text-sm text-red-500">{changePwError}</p>}
+                <DialogFooter>
+                  <Button type="submit" disabled={changePwLoading}>{changePwLoading ? "Changing..." : "Change Password"}</Button>
+                </DialogFooter>
+              </form>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
 
@@ -236,7 +303,16 @@ export function ProfileForm({
                 Permanently delete your account and all associated data.
               </p>
             </div>
-            <form action={deleteAccountAction} method="post">
+            <form
+              action="/settings/delete-account-action"
+              method="post"
+              onSubmit={e => {
+                const confirmed = window.confirm("Are you sure you want to permanently delete your account? This action cannot be undone.");
+                if (!confirmed) {
+                  e.preventDefault();
+                }
+              }}
+            >
               <Button variant="destructive" type="submit">Delete Account</Button>
             </form>
           </div>
@@ -245,3 +321,4 @@ export function ProfileForm({
     </div>
   );
 }
+
