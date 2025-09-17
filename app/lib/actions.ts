@@ -1,5 +1,8 @@
 "use server";
 import { createClient } from "./supabase/server";
+import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
 // --- Profile Update Action ---
 import { uploadProfilePicture } from "./supabase/storage";
 const profileUpdateSchema = z.object({
@@ -7,7 +10,10 @@ const profileUpdateSchema = z.object({
   last_name: z.string().min(1, "Last name is required").max(50),
   email: z.string().email("Must be a valid Gmail address").regex(/@gmail\.com$/, "Must be a Gmail address"),
   current_password: z.string().min(1, "Current password is required"),
-  profile_picture: z.any().optional(),
+  profile_picture: z.union([
+    z.instanceof(File),
+    z.undefined(),
+  ]).optional(),
 });
 
 export async function updateProfile(prevState: any, formData: FormData) {
@@ -42,9 +48,9 @@ export async function updateProfile(prevState: any, formData: FormData) {
 
   // Update profile picture if provided
   let avatar_url = user.user_metadata?.avatar_url;
-  if (profile_picture && typeof profile_picture !== "string") {
+  if (profile_picture instanceof File) {
     try {
-      avatar_url = await uploadProfilePicture(user.id, profile_picture as File);
+      avatar_url = await uploadProfilePicture(user.id, profile_picture);
     } catch (e: any) {
       return { errors: { profile_picture: [e.message] } };
     }
@@ -126,9 +132,6 @@ export async function deleteAccountAction() {
   redirect("/login");
 }
 
-import { z } from "zod";
-import { redirect } from "next/navigation";
-import { revalidatePath } from "next/cache";
 import { 
   createPoll as createPollInSupabase, 
   getPoll, 

@@ -9,22 +9,35 @@ interface PollVoteFormProps {
   poll: PollWithDetails;
 }
 
+
 export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   const [poll, setPoll] = useState(initialPoll);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [voted, setVoted] = useState(false);
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<any>(null);
 
   useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const client = await createClient();
+      if (mounted) setSupabase(client);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!supabase) return;
     const channel = supabase
-      .channel(`poll-votes-${initialPoll.id}`)
+      .channel(`poll-votes-${poll.id}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'votes',
-          filter: `poll_id=eq.${initialPoll.id}`,
+          filter: `poll_id=eq.${poll.id}`,
         },
         async () => {
           const { data: updatedPollData } = await supabase
@@ -40,7 +53,7 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
               )
             `
             )
-            .eq('id', initialPoll.id)
+            .eq('id', poll.id)
             .single();
 
           if (updatedPollData) {
@@ -54,11 +67,11 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [initialPoll, supabase]);
+  }, [poll.id, supabase]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedOption) return;
+    if (!selectedOption || !supabase) return;
     const { error } = await supabase.from('votes').insert({
       poll_id: poll.id,
       option_id: selectedOption,

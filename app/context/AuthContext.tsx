@@ -20,18 +20,33 @@ const AuthContext = createContext<AuthContextType>({
   refreshUser: () => {},
 });
 
+import { createBrowserClient } from "@supabase/ssr";
+
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const supabase = createClient();
+  const [supabase, setSupabase] = useState<ReturnType<typeof createBrowserClient> | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
+  // Initialize supabase client once
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { createClient } = await import("@/app/lib/supabase/client");
+      const client = await createClient();
+      if (mounted) setSupabase(client);
+    })();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const refreshUser = useCallback(async () => {
+    if (!supabase) return;
     try {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       setUser(user);
     } catch (error) {
-      // Replace with a non-noisy logger if available
       if (process.env.NODE_ENV === "development") {
         console.error("Error fetching user:", error);
       }
@@ -39,16 +54,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [supabase]);
 
   useEffect(() => {
-    const { data: authListener } = supabase.auth.onAuthStateChange(
-      () => {
-        refreshUser();
-      }
-    );
-
+    if (!supabase) return;
+    const { data: authListener } = supabase.auth.onAuthStateChange(() => {
+      refreshUser();
+    });
     refreshUser();
-
     return () => {
-      authListener.subscription.unsubscribe();
+      authListener?.subscription?.unsubscribe?.();
     };
   }, [supabase, refreshUser]);
 

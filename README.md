@@ -1,3 +1,59 @@
+# Project Extension Plan – Polly-App
+
+I will be extending the current Polly-App project. This is a full-stack web application built with a modern tech stack, featuring a Next.js and TypeScript frontend with Tailwind CSS for styling, Supabase for the backend and database, and Vitest for testing.
+
+## Planned Features
+
+Below are the new features I will be adding. At the end, the application will be well-tested, fully functional, and responsive:
+
+- 🔒 User role management (e.g., admin vs. regular users)
+- 📊 Poll result charts (using a charting library)
+- 📱 Mobile responsiveness and improved accessibility
+- 🧪 Unit and integration tests using Jest and React Testing Library
+- 🧠 AI-powered reviews and automated release notes with CodeRabbit
+- 📷 QR code generation for individual polls, making them easily shareable across devices
+
+### Stretch Goals (if time permits)
+
+- 📦 Integrate an email notification system (e.g., poll closing alerts)
+- 💬 Add comments or discussion threads on each poll
+
+## AI Integration Plan
+
+I will use AI agents such as Cursor, Trae, and Copilot for:
+
+- Scaffolding new features
+- Function and schema suggestions
+- Unit and integration test generation
+- Database schema design
+- Documentation drafting and enhancement
+- Refactoring and code optimization
+- Continuous learning (asking AI for explanations of its suggestions)
+
+All commits will be reviewed with CodeRabbit, and fixes will be made with AI assistance.
+Docstrings will be written by me and refined by the AI agent. A mix of inline and prompt-based interactions will be used.
+
+## Code & Feature Generation Strategy
+
+Since the project is already scaffolded for future expansion, I will first provide the AI agent with a clear understanding of the codebase and the specific features to be added. This reduces hallucinations and ensures relevant suggestions.
+
+I will also define rules to prevent existing logic from being altered unintentionally.
+Every prompt will be concise, and all AI-generated suggestions will be manually reviewed before implementation.
+
+## Prompting Strategy
+
+When prompting the AI agent, I will take the perspective of a senior developer responsible for extending this project. The agent will:
+
+- Analyze and understand the existing codebase.
+- Extend the current scaffold to include new features such as:
+    - 🔒 User role management
+    - 📊 Poll result charts
+    - 📱 Mobile responsiveness and accessibility improvements
+    - 🧪 Testing enhancements
+    - 🧠 AI-powered reviews
+    - 📷 QR code generation
+- If any of these features conflict with or hinder the functionality of the project, the AI agent should flag them during the planning stage before code generation begins.
+
 # Polly - A Real-Time Polling Application
 
 Polly is a full-stack web application that allows users to create, manage, and vote on polls in real-time. It is built with modern web technologies to provide a seamless and interactive user experience.
