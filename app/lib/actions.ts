@@ -252,18 +252,25 @@ export async function createPoll(prevState: any, formData: FormData) {
     }
   }
 
-  const schema = z.object({
+  // Normalize incoming form values with Zod and rely on validated values below
+  const createSchema = z.object({
     question: z.string().min(1, "Question cannot be empty"),
-    options: z
-      .array(z.string().min(1))
-      .min(2, "At least two options are required"),
+    options: z.array(z.string().min(1)).min(2, "At least two options are required"),
+    require_auth: z.preprocess(v => v === 'on' || v === true, z.boolean()).default(false),
+    single_vote: z.preprocess(v => v === 'on' || v === true, z.boolean()).default(false),
+    visibility: z.preprocess(v => (v === null ? undefined : v), z.enum(["public","unlisted","private"]).default('public')),
+    results_visibility: z.preprocess(v => (v === null ? undefined : v), z.enum(["public","after_close","owner_only"]).default('public')),
   });
 
   console.log("formData options:", formData.getAll("options"));
 
-  const validatedFields = schema.safeParse({
+  const validatedFields = createSchema.safeParse({
     question: formData.get("question"),
     options: formData.getAll("options").filter((o) => o !== ""),
+    require_auth: formData.get("requireAuth"),
+    single_vote: formData.get("singleVote"),
+    visibility: formData.get("visibility"),
+    results_visibility: formData.get("results_visibility"),
   });
 
   if (!validatedFields.success) {
@@ -273,11 +280,7 @@ export async function createPoll(prevState: any, formData: FormData) {
     };
   }
 
-  const { question, options } = validatedFields.data;
-  const requireAuth = formData.get("requireAuth") === "on";
-  const singleVote = formData.get("singleVote") === "on";
-  const visibility = (formData.get("visibility") as string) || 'public';
-  const resultsVisibility = (formData.get("results_visibility") as string) || 'public';
+  const { question, options, require_auth, single_vote, visibility, results_visibility } = validatedFields.data;
 
   // 1. Create poll
   const { data: poll, error: pollError } = await supabase
@@ -285,10 +288,10 @@ export async function createPoll(prevState: any, formData: FormData) {
     .insert({
       question,
       created_by: user.id,
-      require_auth: requireAuth,
-      single_vote: singleVote,
-      visibility,
-      results_visibility: resultsVisibility,
+      require_auth,
+      single_vote,
+      visibility: visibility ?? 'public',
+      results_visibility: results_visibility ?? 'public',
       status: "open",
     })
     .select()
