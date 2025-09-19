@@ -30,6 +30,7 @@ CREATE POLICY IF NOT EXISTS "Authenticated can vote on auth-required open polls"
       WHERE id = poll_id AND status = 'open' AND require_auth = true
     )
     AND auth.uid() IS NOT NULL
+    AND user_id = auth.uid()
   );
 
 -- Enforce one vote per user for authenticated users at DB level (anonymous excluded)

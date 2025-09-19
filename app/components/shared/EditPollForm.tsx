@@ -47,6 +47,14 @@ export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
           defaultChecked={poll.require_auth}
         />
       </div>
+      <div className="flex items-center justify-between mb-6">
+        <Label htmlFor="single-vote">Single vote per user</Label>
+        <Switch
+          id="single-vote"
+          name="singleVote"
+          defaultChecked={poll.single_vote}
+        />
+      </div>
       <Button type="submit">Save Changes</Button>
     </form>
   );
