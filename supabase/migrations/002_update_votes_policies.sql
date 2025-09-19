@@ -14,7 +14,8 @@ BEGIN
 END $$;
 
 -- Allow anyone to vote on open polls that do NOT require auth
-CREATE POLICY IF NOT EXISTS "Anyone can vote on non-auth open polls" ON public.votes
+DROP POLICY IF EXISTS "Anyone can vote on non-auth open polls" ON public.votes;
+CREATE POLICY "Anyone can vote on non-auth open polls" ON public.votes
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.polls
@@ -23,7 +24,8 @@ CREATE POLICY IF NOT EXISTS "Anyone can vote on non-auth open polls" ON public.v
   );
 
 -- Allow only authenticated users to vote on open polls that DO require auth
-CREATE POLICY IF NOT EXISTS "Authenticated can vote on auth-required open polls" ON public.votes
+DROP POLICY IF EXISTS "Authenticated can vote on auth-required open polls" ON public.votes;
+CREATE POLICY "Authenticated can vote on auth-required open polls" ON public.votes
   FOR INSERT WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.polls

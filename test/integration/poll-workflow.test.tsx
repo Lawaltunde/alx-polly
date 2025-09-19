@@ -3,11 +3,18 @@ import { render, screen, fireEvent, waitFor } from '@/test/utils/test-utils';
 import userEvent from '@testing-library/user-event';
 import PollsPage from '@/app/(dashboard)/polls/page';
 import NewPollPage from '@/app/(dashboard)/polls/new/page';
+import { Mock } from 'vitest';
 
 // Mock the Supabase queries
 vi.mock('@/app/lib/supabase/queries', () => ({
   getPolls: vi.fn(),
   getPoll: vi.fn(),
+  getUserPolls: vi.fn(),
+}));
+
+// Mock auth to avoid redirect from requireAuth in server component
+vi.mock('@/app/lib/auth', () => ({
+  requireAuth: vi.fn(async () => ({ id: 'test-user' })),
 }));
 
 // Mock react-dom for form state
@@ -26,8 +33,8 @@ describe('Poll Workflow Integration', () => {
   describe('Complete Poll Lifecycle', () => {
     it('should allow creating and viewing a new poll', async () => {
       // Mock initial polls list with Supabase structure
-      const { getPolls } = await import('@/app/lib/supabase/queries');
-      (getPolls as vi.Mock).mockResolvedValue([
+  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
           question: 'What is your favorite color?',
@@ -104,8 +111,8 @@ describe('Poll Workflow Integration', () => {
 
   describe('Data Persistence', () => {
     it('should handle poll data retrieval', async () => {
-      const { getPolls } = await import('@/app/lib/supabase/queries');
-      (getPolls as vi.Mock).mockResolvedValue([
+  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
           question: 'What is your favorite color?',
@@ -131,8 +138,8 @@ describe('Poll Workflow Integration', () => {
 
   describe('Error Handling', () => {
     it('should handle data loading errors gracefully', async () => {
-      const { getPolls } = await import('@/app/lib/supabase/queries');
-      (getPolls as vi.Mock).mockRejectedValue(new Error('Network error'));
+  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  (getUserPolls as unknown as Mock).mockRejectedValue(new Error('Network error'));
 
       // Should not throw
       try {
@@ -145,8 +152,8 @@ describe('Poll Workflow Integration', () => {
     });
 
     it('should handle empty polls list', async () => {
-      const { getPolls } = await import('@/app/lib/supabase/queries');
-      (getPolls as vi.Mock).mockResolvedValue([]);
+  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  (getUserPolls as unknown as Mock).mockResolvedValue([]);
 
       render(await PollsPage());
 
@@ -157,8 +164,8 @@ describe('Poll Workflow Integration', () => {
 
   describe('User Experience', () => {
     it('should provide clear navigation between pages', async () => {
-      const { getPolls } = await import('@/app/lib/supabase/queries');
-      (getPolls as vi.Mock).mockResolvedValue([
+  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
           question: 'What is your favorite color?',

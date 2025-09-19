@@ -14,7 +14,7 @@ export default function Header() {
       </h1>
       <div className="flex items-center space-x-4">
         <ThemeSwitcher />
-        <UserMenu user={user} />
+  <UserMenu />
       </div>
     </header>
   );

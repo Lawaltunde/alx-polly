@@ -144,6 +144,8 @@ export async function createPoll(pollData: CreatePollData, userId: string): Prom
       require_auth: pollData.require_auth,
       single_vote: pollData.single_vote,
       created_by: userId,
+      visibility: pollData.visibility ?? 'public',
+      results_visibility: pollData.results_visibility ?? 'public',
       expires_at: pollData.expires_at?.toISOString(),
       status: 'open' 
     })
@@ -219,6 +221,8 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
       description: pollData.description,
       require_auth: pollData.require_auth,
       single_vote: pollData.single_vote,
+      visibility: pollData.visibility,
+      results_visibility: pollData.results_visibility,
       status: pollData.status,
       expires_at: pollData.expires_at?.toISOString()
     })
@@ -324,61 +328,7 @@ export async function deletePoll(supabase: any, pollId: string, userId: string):
  * @returns {Promise<void>} A promise that resolves when the vote is submitted.
  * @throws {Error} If the poll is not found, is not open for voting, or if the user has already voted.
  */
-export async function submitVote(voteData: VoteData): Promise<void> {
-  const supabase = await createClient();
-  
-  // Check if the poll exists and is currently open for voting.
-  const { data: poll, error: pollError } = await supabase
-    .from('polls')
-    .select('id, status, single_vote')
-    .eq('id', voteData.poll_id)
-    .single();
-
-  if (pollError || !poll) {
-    throw new Error('Poll not found');
-  }
-
-  if (poll.status !== 'open') {
-    throw new Error('Poll is not open for voting');
-  }
-
-  // For polls that only allow a single vote, check if the user has already voted.
-  // This is a critical part of the voting logic to ensure fairness.
-  if (poll.single_vote && voteData.user_id) {
-    const { data: existingVote } = await supabase
-      .from('votes')
-      .select('id')
-      .eq('poll_id', voteData.poll_id)
-      .eq('user_id', voteData.user_id)
-      .single();
-
-    if (existingVote) {
-      throw new Error('User has already voted on this poll');
-    }
-  }
-
-  // Insert the new vote into the database.
-  const { error: voteError } = await supabase
-    .from('votes')
-    .insert({
-      poll_id: voteData.poll_id,
-      option_id: voteData.option_id,
-      user_id: voteData.user_id,
-      ip_address: voteData.ip_address,
-      user_agent: voteData.user_agent
-    });
-
-  if (voteError) {
-    if (process.env.NODE_ENV === "development") {
-      console.error('Error submitting vote:', voteError);
-    }
-    // If unique violation (single vote per user) occurs, treat as non-fatal
-    if ((voteError as any).code === '23505') {
-      return;
-    }
-    throw new Error('Failed to submit vote');
-  }
-}
+// submitVote moved to server-only module to avoid importing server APIs in client bundles
 
 /**
  * Toggles the status of a poll between 'open' and 'closed'.

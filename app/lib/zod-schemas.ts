@@ -19,6 +19,8 @@ export const PollSchema = z.object({
   created_by: z.string().uuid(),
   require_auth: z.boolean().default(false),
   single_vote: z.boolean().default(true),
+  visibility: z.enum(['public','unlisted','private']).default('public'),
+  results_visibility: z.enum(['public','after_close','owner_only']).default('public'),
   status: z.enum(['open', 'closed', 'draft']).default('open'),
   expires_at: z.string().datetime().nullable(),
   created_at: z.string().datetime().nullable(),
@@ -40,7 +42,7 @@ export const VoteSchema = z.object({
   poll_id: z.string().uuid(),
   option_id: z.string().uuid(),
   user_id: z.string().uuid().nullable(),
-  ip_address: z.string().ip().nullable(),
+  ip_address: z.string().nullable(),
   user_agent: z.string().nullable(),
   created_at: z.string().datetime().nullable(),
 });

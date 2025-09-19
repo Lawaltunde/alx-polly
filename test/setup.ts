@@ -98,3 +98,34 @@ Object.defineProperty(window, 'matchMedia', {
     dispatchEvent: vi.fn(),
   })),
 });
+
+// Polyfill requestSubmit to avoid JSDOM warnings in form tests
+if (!(HTMLFormElement.prototype as any).requestSubmit) {
+  (HTMLFormElement.prototype as any).requestSubmit = function () {
+    // Fall back to calling submit directly in tests
+    // This keeps server action forms quiet in JSDOM
+    if (typeof (this as any).submit === 'function') {
+      (this as any).submit();
+    }
+  };
+}
+
+// Mock Supabase browser client to a singleton to avoid multiple GoTrueClient warnings
+vi.mock('@/app/lib/supabase/client', () => {
+  const singleton = {
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({ eq: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })),
+      insert: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })),
+      update: vi.fn(() => ({ eq: vi.fn(() => ({ select: vi.fn(() => ({ single: vi.fn(() => ({ data: null, error: null })) })) })) })),
+    })),
+    auth: { getUser: vi.fn(() => ({ data: { user: null }, error: null })) },
+    channel: vi.fn(() => ({ on: vi.fn(() => ({ subscribe: vi.fn(() => ({}) ) })), subscribe: vi.fn(() => ({})) })),
+    removeChannel: vi.fn(),
+  };
+  return {
+    createClient: vi.fn(async () => singleton),
+  };
+});
+
+// Note: we intentionally do not globally mock '@/app/lib/supabase/queries'
+// here to avoid interfering with test-specific mocks. If needed, mock per-test.

@@ -14,6 +14,8 @@ export interface Poll {
   created_by: string;
   require_auth: boolean;
   single_vote: boolean;
+  visibility?: 'public' | 'unlisted' | 'private';
+  results_visibility?: 'public' | 'after_close' | 'owner_only';
   status: 'open' | 'closed' | 'draft';
   expires_at: string | null;
   created_at: string;
@@ -61,6 +63,8 @@ export interface CreatePollData {
   options: string[];
   require_auth: boolean;
   single_vote: boolean;
+  visibility?: 'public' | 'unlisted' | 'private';
+  results_visibility?: 'public' | 'after_close' | 'owner_only';
   expires_at?: Date;
 }
 
@@ -70,6 +74,8 @@ export interface UpdatePollData {
   options?: string[];
   require_auth?: boolean;
   single_vote?: boolean;
+  visibility?: 'public' | 'unlisted' | 'private';
+  results_visibility?: 'public' | 'after_close' | 'owner_only';
   status?: 'open' | 'closed' | 'draft';
   expires_at?: Date;
 }

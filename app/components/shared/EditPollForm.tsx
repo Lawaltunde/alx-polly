@@ -55,6 +55,32 @@ export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
           defaultChecked={poll.single_vote}
         />
       </div>
+      <div className="mb-4">
+        <Label htmlFor="visibility">Poll visibility</Label>
+        <select
+          id="visibility"
+          name="visibility"
+          defaultValue={poll.visibility || 'public'}
+          className="mt-2 w-full rounded border p-2 bg-background"
+        >
+          <option value="public">Public</option>
+          <option value="unlisted">Unlisted</option>
+          <option value="private">Private</option>
+        </select>
+      </div>
+      <div className="mb-6">
+        <Label htmlFor="results_visibility">Results visibility</Label>
+        <select
+          id="results_visibility"
+          name="results_visibility"
+          defaultValue={poll.results_visibility || 'public'}
+          className="mt-2 w-full rounded border p-2 bg-background"
+        >
+          <option value="public">Public</option>
+          <option value="after_close">After poll closes</option>
+          <option value="owner_only">Owner only</option>
+        </select>
+      </div>
       <Button type="submit">Save Changes</Button>
     </form>
   );

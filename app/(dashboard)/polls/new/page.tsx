@@ -124,6 +124,32 @@ export default function NewPollPage() {
               <input type="checkbox" id="singleVote" name="singleVote" />
               <Label htmlFor="singleVote">One vote per user</Label>
             </div>
+            <div className="mt-4 space-y-2">
+              <Label htmlFor="visibility">Poll visibility</Label>
+              <select
+                id="visibility"
+                name="visibility"
+                defaultValue="public"
+                className="mt-1 w-full rounded border p-2 bg-background"
+              >
+                <option value="public">Public</option>
+                <option value="unlisted">Unlisted</option>
+                <option value="private">Private</option>
+              </select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="results_visibility">Results visibility</Label>
+              <select
+                id="results_visibility"
+                name="results_visibility"
+                defaultValue="public"
+                className="mt-1 w-full rounded border p-2 bg-background"
+              >
+                <option value="public">Public</option>
+                <option value="after_close">After poll closes</option>
+                <option value="owner_only">Owner only</option>
+              </select>
+            </div>
           </CardContent>
           <CardFooter className="flex justify-end space-x-2">
             <Button variant="outline" onClick={() => router.back()}>Cancel</Button>

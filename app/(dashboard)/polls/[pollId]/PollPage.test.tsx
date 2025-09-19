@@ -1,10 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import PollPage from './page';
 
 // Mock the Supabase queries
 vi.mock('@/app/lib/supabase/queries', () => ({
   getPoll: vi.fn(),
+  getPollOptionResults: vi.fn(async (_pollId: string) => [
+    { id: '1', text: 'Red', vote_count: 5 },
+    { id: '2', text: 'Blue', vote_count: 3 },
+  ]),
 }));
 
 describe('PollPage', () => {
@@ -13,8 +17,8 @@ describe('PollPage', () => {
   });
 
   it('should render the poll question and options', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockResolvedValue({
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockResolvedValue({
       id: '1',
       question: 'What is your favorite color?',
       poll_options: [
@@ -33,8 +37,8 @@ describe('PollPage', () => {
   });
 
   it('should display vote counts for each option', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockResolvedValue({
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockResolvedValue({
       id: '1',
       question: 'What is your favorite color?',
       poll_options: [
@@ -53,8 +57,8 @@ describe('PollPage', () => {
   });
 
   it('should render a not found message if the poll does not exist', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockResolvedValue(null);
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockResolvedValue(null);
 
     try {
       await PollPage({ params: Promise.resolve({ pollId: '404' }) });
@@ -67,8 +71,8 @@ describe('PollPage', () => {
   });
 
   it('should handle voting functionality', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockResolvedValue({
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockResolvedValue({
       id: '1',
       question: 'What is your favorite color?',
       poll_options: [
@@ -85,8 +89,8 @@ describe('PollPage', () => {
   });
 
   it('should display poll metadata correctly', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockResolvedValue({
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockResolvedValue({
       id: '1',
       question: 'What is your favorite color?',
       poll_options: [
@@ -124,8 +128,8 @@ describe('PollPage', () => {
   });
 
   it('should handle data loading errors gracefully', async () => {
-    const { getPoll } = await import('@/app/lib/supabase/queries');
-    (getPoll as vi.Mock).mockRejectedValue(new Error('Failed to load poll'));
+  const { getPoll } = await import('@/app/lib/supabase/queries');
+  (getPoll as unknown as Mock).mockRejectedValue(new Error('Failed to load poll'));
 
     try {
       const component = await PollPage({ params: Promise.resolve({ pollId: '1' }) });

@@ -136,11 +136,11 @@ import {
   createPoll as createPollInSupabase, 
   getPoll, 
   deletePoll, 
-  submitVote as submitVoteToSupabase,
   togglePollStatus as togglePollStatusInSupabase,
   updatePoll as updatePollInSupabase,
   getUserPolls 
 } from "./supabase/queries";
+import { submitVote as submitVoteToSupabase } from "./supabase/server-queries";
 import { getCurrentUser, requireAuth } from "./auth";
 import { generatePollQRCode } from "./qr-code";
 
@@ -215,6 +215,8 @@ const pollSchema = z.object({
     .min(2, "At least two options are required"),
   require_auth: z.boolean(),
   single_vote: z.boolean(),
+  visibility: z.enum(["public","unlisted","private"]).optional(),
+  results_visibility: z.enum(["public","after_close","owner_only"]).optional(),
 });
 
 export async function createPoll(prevState: any, formData: FormData) {
@@ -274,6 +276,8 @@ export async function createPoll(prevState: any, formData: FormData) {
   const { question, options } = validatedFields.data;
   const requireAuth = formData.get("requireAuth") === "on";
   const singleVote = formData.get("singleVote") === "on";
+  const visibility = (formData.get("visibility") as string) || 'public';
+  const resultsVisibility = (formData.get("results_visibility") as string) || 'public';
 
   // 1. Create poll
   const { data: poll, error: pollError } = await supabase
@@ -283,6 +287,8 @@ export async function createPoll(prevState: any, formData: FormData) {
       created_by: user.id,
       require_auth: requireAuth,
       single_vote: singleVote,
+      visibility,
+      results_visibility: resultsVisibility,
       status: "open",
     })
     .select()
@@ -375,14 +381,17 @@ export async function handleVote(formData: FormData) {
 
   try {
     if (poll.single_vote && userId) {
-      const supabase = await (await import("./supabase/server")).createClient();
-      const { data: existing } = await supabase
+      // Double-check with server client so RLS sees auth.uid()
+      const supabaseSrv = await (await import("./supabase/server")).createClient();
+      const { data: existing } = await supabaseSrv
         .from('votes')
         .select('id')
         .eq('poll_id', pollId)
         .eq('user_id', userId)
         .maybeSingle();
-      if (!existing) {
+      if (existing) {
+        // Already voted; skip insert
+      } else {
         await submitVoteToSupabase({
           poll_id: pollId,
           option_id: selectedOptionId,
@@ -432,6 +441,8 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
       options: formData.getAll("options").filter((o) => o !== ""),
       require_auth: formData.get("requireAuth") === "on",
       single_vote: formData.get("singleVote") === "on",
+  visibility: (formData.get("visibility") as string) || undefined,
+  results_visibility: (formData.get("results_visibility") as string) || undefined,
     });
 
     if (!validatedFields.success) {
@@ -441,7 +452,7 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
     }
 
     // Use the Supabase update function
-    await updatePollInSupabase(pollId, validatedFields.data, user.id);
+  await updatePollInSupabase(pollId, validatedFields.data, user.id);
 
     revalidatePath(`/polls/${pollId}`);
     revalidatePath(`/polls/${pollId}/settings`);
