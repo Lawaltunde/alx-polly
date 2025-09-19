@@ -36,7 +36,7 @@ CREATE POLICY "Options for visible polls are viewable" ON public.poll_options
   FOR SELECT USING (
     EXISTS (
       SELECT 1 FROM public.polls p
-      WHERE p.id = poll_id AND p.status = ''open'' AND p.visibility IN (''public'',''unlisted'')
+  WHERE p.id = poll_id AND p.status = 'open' AND p.visibility IN ('public','unlisted')
     )
   );
 
