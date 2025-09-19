@@ -171,8 +171,11 @@ export async function login(prevState: any, formData: FormData) {
     };
   }
 
+  // Allow redirecting back to the originally requested page if provided
+  const next = (formData.get('next') as string | null) || null;
+  const safeNext = next && next.startsWith('/') ? next : null;
   revalidatePath("/", "layout");
-  redirect("/polls");
+  redirect(safeNext || "/polls");
 }
 
 const signupSchema = z.object({
@@ -337,8 +340,13 @@ export async function handleVote(formData: FormData) {
 
   let userId: string | undefined;
   if (poll.require_auth) {
-    const user = await requireAuth();
-    userId = user.id;
+    // Don't blindly redirect to /polls; preserve context to return after login
+    const user = await getCurrentUser();
+    if (!user) {
+      const nextPath = source === "public" ? `/p/${pollId}` : `/polls/${pollId}`;
+      redirect(`/login?next=${encodeURIComponent(nextPath)}`);
+    }
+    userId = user!.id;
   }
 
   // Capture IP/User-Agent (best-effort)
@@ -366,13 +374,32 @@ export async function handleVote(formData: FormData) {
   }
 
   try {
-    await submitVoteToSupabase({
-      poll_id: pollId,
-      option_id: selectedOptionId,
-      user_id: userId,
-      ip_address: ip_address || undefined,
-      user_agent: user_agent || undefined,
-    });
+    if (poll.single_vote && userId) {
+      const supabase = await (await import("./supabase/server")).createClient();
+      const { data: existing } = await supabase
+        .from('votes')
+        .select('id')
+        .eq('poll_id', pollId)
+        .eq('user_id', userId)
+        .maybeSingle();
+      if (!existing) {
+        await submitVoteToSupabase({
+          poll_id: pollId,
+          option_id: selectedOptionId,
+          user_id: userId,
+          ip_address: ip_address || undefined,
+          user_agent: user_agent || undefined,
+        });
+      }
+    } else {
+      await submitVoteToSupabase({
+        poll_id: pollId,
+        option_id: selectedOptionId,
+        user_id: userId,
+        ip_address: ip_address || undefined,
+        user_agent: user_agent || undefined,
+      });
+    }
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
       console.error("Error submitting vote:", error);

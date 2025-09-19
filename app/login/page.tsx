@@ -20,11 +20,15 @@ const initialState = {
 
 export default function LoginPage() {
   const [state, dispatch] = useFormState(login, initialState);
+  // Capture ?next= from URL and include in form submission
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const next = searchParams?.get('next') ?? '';
 
   return (
     <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
       <Card className="w-full max-w-md shadow-lg">
         <form action={dispatch}>
+          {next && <input type="hidden" name="next" value={next} />}
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">Welcome Back!</CardTitle>
             <CardDescription>

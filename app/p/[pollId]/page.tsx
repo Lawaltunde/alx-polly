@@ -4,11 +4,11 @@ import PollVoteForm from "./poll-vote-form";
 import Footer from "@/app/components/shared/Footer";
 
 export default async function PublicPollPage({ 
-    params, 
+  params, 
 }: { 
-    params: { pollId: string }; 
+  params: Promise<{ pollId: string }>; 
 }) {
-  const { pollId } = params;
+  const { pollId } = await params;
   const poll = await getPoll(pollId);
 
   if (!poll) {

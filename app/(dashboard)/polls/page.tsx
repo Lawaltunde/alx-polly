@@ -1,15 +1,18 @@
 export const dynamic = "force-dynamic";
-import { getPolls } from "@/app/lib/supabase/queries";
+import { getUserPolls } from "@/app/lib/supabase/queries";
 import type { PollWithDetails, PollOptionWithVotes } from "@/app/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
+import { requireAuth } from "@/app/lib/auth";
 export default async function PollsPage() {
+  // Require auth and only show the signed-in user's polls
+  const user = await requireAuth();
   let polls: PollWithDetails[] = [];
   let fetchError: unknown = null;
   try {
-    polls = await getPolls();
+    polls = await getUserPolls(user.id);
   } catch (error) {
     // Log error to server console for observability
     console.error("Failed to fetch polls:", error);
@@ -19,7 +22,7 @@ export default async function PollsPage() {
   return (
     <div className="space-y-8">
       <div className="flex items-center justify-between">
-        <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Polls</h1>
+  <h1 className="text-4xl font-bold text-gray-800 dark:text-white">My Polls</h1>
         {/* This link navigates the user to the page for creating a new poll. */}
         <Link href="/polls/new">
           <Button className="create-poll-button flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white">

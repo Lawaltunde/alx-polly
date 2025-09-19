@@ -201,7 +201,7 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
     .from('polls')
     .select('created_by')
     .eq('id', pollId)
-    .single();
+    .maybeSingle();
 
   if (fetchError || !existingPoll) {
     throw new Error('Poll not found');
@@ -224,11 +224,11 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
     })
     .eq('id', pollId)
     .select()
-    .single();
+    .maybeSingle();
 
-  if (updateError) {
+  if (updateError || !poll) {
     if (process.env.NODE_ENV === "development") {
-      console.error('Error updating poll:', updateError);
+      console.error('Error updating poll:', updateError ?? 'No poll returned after update');
     }
     throw new Error('Failed to update poll');
   }
@@ -371,6 +371,10 @@ export async function submitVote(voteData: VoteData): Promise<void> {
   if (voteError) {
     if (process.env.NODE_ENV === "development") {
       console.error('Error submitting vote:', voteError);
+    }
+    // If unique violation (single vote per user) occurs, treat as non-fatal
+    if ((voteError as any).code === '23505') {
+      return;
     }
     throw new Error('Failed to submit vote');
   }
