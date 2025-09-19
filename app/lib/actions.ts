@@ -341,11 +341,37 @@ export async function handleVote(formData: FormData) {
     userId = user.id;
   }
 
+  // Capture IP/User-Agent (best-effort)
+  const { headers: getHeaders, cookies: getCookies } = await import("next/headers");
+  const hdrs = await getHeaders();
+  const cookieStore = await getCookies();
+  const xff = hdrs.get('x-forwarded-for') || hdrs.get('x-real-ip') || '';
+  const ip_address = xff.split(',')[0]?.trim() || null;
+  const user_agent = hdrs.get('user-agent') || null;
+
+  // Enforce single-vote for anonymous browsers using a cookie guard
+  if (poll.single_vote && !userId) {
+    const cookieKey = `voted_${pollId}`;
+    const votedCookie = cookieStore.get(cookieKey);
+    if (votedCookie?.value === '1') {
+      // Already voted from this browser; just redirect to results
+      if (source === "public") {
+        revalidatePath(`/p/${pollId}`);
+        redirect(`/p/${pollId}/results`);
+      } else {
+        revalidatePath(`/polls/${pollId}`);
+        redirect(`/polls/${pollId}/results`);
+      }
+    }
+  }
+
   try {
     await submitVoteToSupabase({
       poll_id: pollId,
       option_id: selectedOptionId,
       user_id: userId,
+      ip_address: ip_address || undefined,
+      user_agent: user_agent || undefined,
     });
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -354,12 +380,19 @@ export async function handleVote(formData: FormData) {
     // Redirect even if vote fails to avoid user being stuck, but log the error.
   }
 
+  // Set single-vote cookie for anonymous browsers after a successful vote
+  if (poll.single_vote && !userId) {
+    const { cookies: cookieApi } = await import("next/headers");
+    const c = await cookieApi();
+    c.set({ name: `voted_${pollId}`, value: '1', httpOnly: true, path: '/', maxAge: 60 * 60 * 24 * 365 });
+  }
+
   if (source === "public") {
     revalidatePath(`/p/${pollId}`);
-    redirect(`/p/${pollId}?voted=true`);
+    redirect(`/p/${pollId}/results`);
   } else {
     revalidatePath(`/polls/${pollId}`);
-    redirect(`/polls/${pollId}`);
+    redirect(`/polls/${pollId}/results`);
   }
 }
 

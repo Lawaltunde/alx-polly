@@ -1,10 +1,9 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSupabaseClient } from '@/app/lib/supabase/useSupabaseClient';
+import { useState } from 'react';
 import { PollWithDetails } from '@/app/lib/types';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import { handleVote } from '@/app/lib/actions';
 
 interface PollVoteFormDashboardProps {
   poll: PollWithDetails;
@@ -12,27 +11,10 @@ interface PollVoteFormDashboardProps {
 
 export default function PollVoteFormDashboard({ poll }: PollVoteFormDashboardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const { supabase, ready } = useSupabaseClient();
-  const router = useRouter();
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-  if (!selectedOption || !supabase || !ready) return;
-
-  const { error } = await supabase.from('votes').insert({
-      poll_id: poll.id,
-      option_id: selectedOption,
-    });
-
-    if (!error) {
-      router.push(`/polls/${poll.id}/results`);
-    } else {
-      console.error("Error voting:", error);
-    }
-  };
-
   return (
-    <form onSubmit={handleSubmit}>
+    <form action={handleVote}>
+      <input type="hidden" name="pollId" value={poll.id} />
+      <input type="hidden" name="source" value="dashboard" />
       <div className="space-y-4">
         {poll.poll_options?.map((option) => (
           <div key={option.id}>
@@ -44,7 +26,7 @@ export default function PollVoteFormDashboard({ poll }: PollVoteFormDashboardPro
               <input
                 type="radio"
                 id={option.id}
-                name="option"
+                name="selectedOptionId"
                 value={option.id}
                 checked={selectedOption === option.id}
                 onChange={() => setSelectedOption(option.id)}

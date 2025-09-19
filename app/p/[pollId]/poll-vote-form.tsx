@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { createClient } from '@/app/lib/supabase/client';
 import { PollWithDetails } from '@/app/lib/types';
 import PollResults from '../../components/shared/PollResults';
+import { handleVote } from '@/app/lib/actions';
 
 interface PollVoteFormProps {
   poll: PollWithDetails;
@@ -14,75 +14,8 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   const [poll, setPoll] = useState(initialPoll);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
   const [voted, setVoted] = useState(false);
-  const [supabase, setSupabase] = useState<any>(null);
 
-  useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const client = await createClient();
-      if (mounted) setSupabase(client);
-    })();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!supabase) return;
-    const channel = supabase
-      .channel(`poll-votes-${poll.id}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'votes',
-          filter: `poll_id=eq.${poll.id}`,
-        },
-        async () => {
-          const { data: updatedPollData } = await supabase
-            .from('polls')
-            .select(
-              `
-              id,
-              question,
-              poll_options (
-                id,
-                text,
-                votes ( count )
-              )
-            `
-            )
-            .eq('id', poll.id)
-            .single();
-
-          if (updatedPollData) {
-            const updatedPoll = updatedPollData as PollWithDetails;
-            setPoll(updatedPoll);
-          }
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [poll.id, supabase]);
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!selectedOption || !supabase) return;
-    const { error } = await supabase.from('votes').insert({
-      poll_id: poll.id,
-      option_id: selectedOption,
-    });
-
-    if (!error) {
-      setVoted(true);
-    } else {
-      console.error('Error voting:', error);
-    }
-  };
+  // Realtime handling moved to results page; stick to server action for vote.
 
   if (voted) {
     return <PollResults pollId={poll.id} initialPoll={poll} onGoBack={() => setVoted(false)} />;
@@ -96,7 +29,9 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
           Cast your vote by selecting one of the options below.
         </p>
       </div>
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form action={handleVote} className="space-y-6">
+        <input type="hidden" name="pollId" value={poll.id} />
+        <input type="hidden" name="source" value="public" />
         <div className="space-y-4">
           {poll.poll_options?.map((option: any) => (
             <div

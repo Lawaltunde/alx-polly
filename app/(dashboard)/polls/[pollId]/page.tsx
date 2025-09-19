@@ -10,8 +10,8 @@ import PollResults from "@/app/components/shared/PollResults";
 
 export const revalidate = 0;
 
-export default async function PollPage({ params }: { params: { pollId: string } }) {
-  const { pollId } = params;
+export default async function PollPage({ params }: { params: Promise<{ pollId: string }> }) {
+  const { pollId } = await params;
   const poll = await getPoll(pollId);
 
   if (!poll) {
