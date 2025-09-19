@@ -400,14 +400,11 @@ export async function deletePollAction(formData: FormData) {
   const pollId = formData.get("pollId") as string;
   const user = await requireAuth();
   try {
-    // Minimal debug for entry
     if (process.env.NODE_ENV === "development") {
       console.debug(`[deletePollAction] Attempting to delete poll: ${pollId} for user: ${user.id}`);
     }
-    const { createServerActionClient } = await import("@supabase/auth-helpers-nextjs");
-    const { cookies } = await import("next/headers");
-    const supabase = createServerActionClient({ cookies });
-    const result = await (await import("@/app/lib/supabase/queries")).deletePoll(supabase, pollId, user.id);
+    const supabase = await createClient();
+    await (await import("@/app/lib/supabase/queries")).deletePoll(supabase, pollId, user.id);
     revalidatePath("/polls");
     redirect("/polls");
   } catch (error: any) {
