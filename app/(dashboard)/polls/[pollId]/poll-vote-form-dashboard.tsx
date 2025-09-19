@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { createClient } from '@/app/lib/supabase/client';
+import { useEffect, useState } from 'react';
+import { useSupabaseClient } from '@/app/lib/supabase/useSupabaseClient';
 import { PollWithDetails } from '@/app/lib/types';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
@@ -12,14 +12,14 @@ interface PollVoteFormDashboardProps {
 
 export default function PollVoteFormDashboard({ poll }: PollVoteFormDashboardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
-  const supabase = createClient();
+  const { supabase, ready } = useSupabaseClient();
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!selectedOption) return;
+  if (!selectedOption || !supabase || !ready) return;
 
-    const { error } = await supabase.from('votes').insert({
+  const { error } = await supabase.from('votes').insert({
       poll_id: poll.id,
       option_id: selectedOption,
     });

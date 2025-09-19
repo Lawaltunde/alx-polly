@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { createClient } from "@/app/lib/supabase/client";
+import { useSupabaseClient } from "@/app/lib/supabase/useSupabaseClient";
 import { getPoll, getPollOptionResults } from "@/app/lib/supabase/queries";
 import { PollWithDetails, Vote } from "@/app/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -34,10 +34,11 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
     fetchAndSetData();
   }, [pollId, initialPoll]);
 
-  useEffect(() => {
-    if (!poll) return;
+  const { supabase, ready } = useSupabaseClient();
 
-    const supabase = createClient();
+  useEffect(() => {
+    if (!poll || !ready || !supabase) return;
+
     const channel = supabase
       .channel(`poll_${poll.id}`)
       .on(
@@ -49,7 +50,6 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
           filter: `poll_id=eq.${poll.id}`,
         },
         async () => {
-          // Re-fetch poll to update option vote counts for chart
           const updatedPoll = await getPoll(poll.id);
           setPoll(updatedPoll);
           if (process.env.NODE_ENV === "development") {
@@ -60,9 +60,11 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      try {
+        supabase.removeChannel(channel);
+      } catch {}
     };
-  }, [poll]);
+  }, [poll, ready, supabase]);
 
   // Aggregate vote counts per option in the frontend
   let totalVotes = 0;

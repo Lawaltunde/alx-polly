@@ -5,8 +5,8 @@ import { deletePollAction } from "@/app/lib/actions";
 import { Button } from "@/components/ui/button";
 import EditPollForm from "@/app/components/shared/EditPollForm";
 
-export default async function PollSettingsPage({ params }: { params: Promise<{ pollId: string }> }) {
-  const { pollId } = await params;
+export default async function PollSettingsPage({ params }: { params: { pollId: string } }) {
+  const { pollId } = params;
   const poll = await getPoll(pollId);
 
   if (!poll) {
