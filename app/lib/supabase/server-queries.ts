@@ -199,27 +199,36 @@ export async function getUserPolls(userId: string): Promise<PollWithDetails[]> {
 // Fetch polls the user has participated in (voted on)
 export async function getParticipatedPolls(userId: string): Promise<PollWithDetails[]> {
   const supabase = await createClient();
+
+  // Single round-trip: select from votes with an INNER JOIN to polls, pulling nested relations
   const { data, error } = await supabase
-    .from('polls')
+    .from('votes')
     .select(`
-      *,
-      poll_options (*),
-      profiles ( id, username, full_name, avatar_url )
+      polls!inner(
+        *,
+        poll_options(*),
+        profiles(id, username, full_name, avatar_url)
+      )
     `)
-    .in('id',
-      (
-        await supabase
-          .from('votes')
-          .select('poll_id')
-          .eq('user_id', userId)
-      ).data?.map((v: any) => v.poll_id) || []
-    )
-    .order('created_at', { ascending: false });
+    .eq('user_id', userId)
+    // Order by the related polls.created_at (most recent first)
+    .order('created_at', { foreignTable: 'polls', ascending: false });
+
   if (error) {
     if (process.env.NODE_ENV === 'development') {
-      console.error('Error fetching participated polls (SSR):', error);
+      console.error('Error fetching participated polls (SSR, joined):', error);
     }
     return [];
   }
-  return (data as any) || [];
+
+  // Transform rows of shape { polls: PollWithDetails } to a unique list of polls
+  const rows = (data as any[]) || [];
+  const unique = new Map<string, PollWithDetails>();
+  for (const row of rows) {
+    const poll = row?.polls as PollWithDetails | undefined;
+    if (poll && !unique.has(poll.id)) {
+      unique.set(poll.id, poll);
+    }
+  }
+  return Array.from(unique.values());
 }
