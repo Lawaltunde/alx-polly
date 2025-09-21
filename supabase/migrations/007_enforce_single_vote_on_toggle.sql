@@ -19,17 +19,12 @@ BEGIN
     RETURN NEW;
   END IF;
 
-  -- If authenticated vote (user_id present), block if any prior vote by same user OR same device exists
+  -- If authenticated vote (user_id present), block if any prior vote by the same user exists
   IF NEW.user_id IS NOT NULL THEN
     IF EXISTS (
       SELECT 1 FROM public.votes v
       WHERE v.poll_id = NEW.poll_id
-        AND (
-          v.user_id = NEW.user_id OR (
-            NEW.ip_address IS NOT NULL AND NEW.user_agent IS NOT NULL AND
-            v.ip_address = NEW.ip_address AND v.user_agent = NEW.user_agent
-          )
-        )
+        AND v.user_id = NEW.user_id
     ) THEN
       RAISE EXCEPTION 'single-vote enforced: duplicate vote' USING ERRCODE = '23505';
     END IF;
