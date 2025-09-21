@@ -1,4 +1,4 @@
-import { getPoll } from "@/app/lib/supabase/queries";
+import { getPoll } from "@/app/lib/supabase/server-queries";
 import { notFound } from "next/navigation";
 import { deletePollAction } from "@/app/lib/actions";
 

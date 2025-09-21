@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { PollWithDetails } from '@/app/lib/types';
 import { Button } from '@/components/ui/button';
 import { handleVote } from '@/app/lib/actions';
+import { toast } from 'sonner';
 
 interface PollVoteFormDashboardProps {
   poll: PollWithDetails;
@@ -11,6 +12,16 @@ interface PollVoteFormDashboardProps {
 
 export default function PollVoteFormDashboard({ poll }: PollVoteFormDashboardProps) {
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('closed') === '1') {
+      toast.warning('This poll is closed and no longer accepts votes.');
+      params.delete('closed');
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
   return (
     <form action={handleVote}>
       <input type="hidden" name="pollId" value={poll.id} />

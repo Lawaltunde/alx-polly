@@ -194,80 +194,7 @@ export async function createPoll(pollData: CreatePollData, userId: string): Prom
  * @returns {Promise<Poll>} A promise that resolves to the updated poll.
  * @throws {Error} If the poll is not found, the user is not authorized, or the update fails.
  */
-export async function updatePoll(pollId: string, pollData: UpdatePollData, userId: string): Promise<Poll> {
-  const supabase = await createClient();
-  
-  // First, verify that the user owns the poll before allowing an update.
-  // This is a critical security measure.
-  const { data: existingPoll, error: fetchError } = await supabase
-    .from('polls')
-    .select('created_by')
-    .eq('id', pollId)
-    .maybeSingle();
-
-  if (fetchError || !existingPoll) {
-    throw new Error('Poll not found');
-  }
-
-  if (existingPoll.created_by !== userId) {
-    throw new Error('Unauthorized to update this poll');
-  }
-
-  // Update the poll with the new data.
-  const { data: poll, error: updateError } = await supabase
-    .from('polls')
-    .update({
-      question: pollData.question,
-      description: pollData.description,
-      require_auth: pollData.require_auth,
-      single_vote: pollData.single_vote,
-      visibility: pollData.visibility,
-      results_visibility: pollData.results_visibility,
-      status: pollData.status,
-      expires_at: pollData.expires_at?.toISOString()
-    })
-    .eq('id', pollId)
-    .select()
-    .maybeSingle();
-
-  if (updateError || !poll) {
-    if (process.env.NODE_ENV === "development") {
-      console.error('Error updating poll:', updateError ?? 'No poll returned after update');
-    }
-    throw new Error('Failed to update poll');
-  }
-
-  // If new options are provided, replace the old ones.
-  // This is a simple but potentially destructive approach. A more sophisticated
-  // implementation might allow for adding, removing, or reordering individual options.
-  if (pollData.options) {
-    // Delete all existing options for the poll.
-    await supabase
-      .from('poll_options')
-      .delete()
-      .eq('poll_id', pollId);
-
-    // Create the new options.
-    const options = pollData.options.map((option, index) => ({
-      poll_id: pollId,
-      text: option,
-      order_index: index
-    }));
-
-    const { error: optionsError } = await supabase
-      .from('poll_options')
-      .insert(options);
-
-    if (optionsError) {
-      if (process.env.NODE_ENV === "development") {
-        console.error('Error updating poll options:', optionsError);
-      }
-      throw new Error('Failed to update poll options');
-    }
-  }
-
-  return poll;
-}
+// updatePoll moved to server-queries.ts (server-only)
 
 /**
  * Deletes a poll from the database.
@@ -340,44 +267,7 @@ export async function deletePoll(supabase: any, pollId: string, userId: string):
  * @returns {Promise<Poll>} A promise that resolves to the updated poll.
  * @throws {Error} If the poll is not found, the user is not authorized, or the update fails.
  */
-export async function togglePollStatus(pollId: string, userId: string): Promise<Poll> {
-  const supabase = await createClient();
-  
-  // Verify ownership before allowing the status to be changed.
-  const { data: existingPoll, error: fetchError } = await supabase
-    .from('polls')
-    .select('created_by, status')
-    .eq('id', pollId)
-    .single();
-
-  if (fetchError || !existingPoll) {
-    throw new Error('Poll not found');
-  }
-
-  if (existingPoll.created_by !== userId) {
-    throw new Error('Unauthorized to update this poll');
-  }
-
-  // Determine the new status based on the current status.
-  const newStatus = existingPoll.status === 'open' ? 'closed' : 'open';
-  
-  // Update the poll's status in the database.
-  const { data: poll, error: updateError } = await supabase
-    .from('polls')
-    .update({ status: newStatus })
-    .eq('id', pollId)
-    .select()
-    .single();
-
-  if (updateError) {
-    if (process.env.NODE_ENV === "development") {
-      console.error('Error toggling poll status:', updateError);
-    }
-    throw new Error('Failed to toggle poll status');
-  }
-
-  return poll;
-}
+// togglePollStatus moved to server-queries.ts (server-only)
 
 /**
  * Fetches all polls created by a specific user.

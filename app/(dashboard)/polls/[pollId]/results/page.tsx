@@ -1,6 +1,6 @@
 
 import PollResults from "@/app/components/shared/PollResults";
-import { getPoll } from "@/app/lib/supabase/queries";
+import { getPoll } from "@/app/lib/supabase/server-queries";
 import { notFound } from "next/navigation";
 import { requireAuth } from "@/app/lib/auth";
 

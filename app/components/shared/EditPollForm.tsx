@@ -9,17 +9,18 @@ import { Switch } from "@/components/ui/switch";
 import { PollWithDetails } from "@/app/lib/types";
 
 export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
-  const initialState = { errors: {} as Record<string, string[]> };
+  const initialState = { errors: {} as Record<string, string[]>, success: undefined as undefined | boolean };
   const updatePollWithId = updatePoll.bind(null, poll.id);
   const [state, dispatch] = useFormState(updatePollWithId, initialState);
+  const errors = (state?.errors || {}) as Record<string, string[]>;
 
   return (
-    <form action={dispatch}>
+  <form action={dispatch}>
       <div className="mb-4">
         <Label htmlFor="question">Question</Label>
         <Input id="question" name="question" defaultValue={poll.question} />
-        {state.errors?.question &&
-          state.errors.question.map((error: string) => (
+        {errors?.question &&
+          errors.question.map((error: string) => (
             <p className="text-sm text-red-500" key={error}>
               {error}
             </p>
@@ -32,8 +33,8 @@ export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
             <Input name={`options`} defaultValue={option.text} />
           </div>
         ))}
-        {state.errors?.options &&
-          state.errors.options.map((error: string) => (
+        {errors?.options &&
+          errors.options.map((error: string) => (
             <p className="text-sm text-red-500" key={error}>
               {error}
             </p>
@@ -81,6 +82,9 @@ export default function EditPollForm({ poll }: { poll: PollWithDetails }) {
           <option value="owner_only">Owner only</option>
         </select>
       </div>
+      {errors?.general && (
+        <p className="text-sm text-red-500 mt-2">{errors.general[0]}</p>
+      )}
       <Button type="submit">Save Changes</Button>
     </form>
   );

@@ -2,8 +2,8 @@ import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen } from '@/test/utils/test-utils';
 import PollsPage from './page';
 
-// Mock the Supabase queries
-vi.mock('@/app/lib/supabase/queries', () => ({
+// Mock the Supabase queries (SSR variant used by page)
+vi.mock('@/app/lib/supabase/server-queries', () => ({
   getUserPolls: vi.fn(),
 }));
 
@@ -18,7 +18,7 @@ describe('PollsPage', () => {
   });
 
   it('should render polls list when polls exist', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -39,7 +39,7 @@ describe('PollsPage', () => {
   });
 
   it('should render empty state when no polls exist', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
@@ -50,7 +50,7 @@ describe('PollsPage', () => {
   });
 
   it('should display poll options correctly', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -70,7 +70,7 @@ describe('PollsPage', () => {
   });
 
   it('should display total vote count for each poll', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -91,7 +91,7 @@ describe('PollsPage', () => {
   });
 
   it('should have correct links to poll details', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',

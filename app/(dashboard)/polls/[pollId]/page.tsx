@@ -1,4 +1,4 @@
-import { getPoll } from "@/app/lib/supabase/queries";
+import { getPoll } from "@/app/lib/supabase/server-queries";
 import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
@@ -41,7 +41,7 @@ export default async function PollPage({ params }: { params: Promise<{ pollId: s
         </div>
         <div>
           <h2 className="text-2xl font-bold mb-4">Results</h2>
-          <PollResults pollId={poll.id} />
+          <PollResults pollId={poll.id} initialPoll={poll} />
         </div>
       </div>
     </div>

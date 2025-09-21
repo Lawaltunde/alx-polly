@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { getUserPolls } from "@/app/lib/supabase/queries";
+import { getUserPolls, getParticipatedPolls } from "@/app/lib/supabase/server-queries";
 import type { PollWithDetails, PollOptionWithVotes } from "@/app/lib/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,9 +10,11 @@ export default async function PollsPage() {
   // Require auth and only show the signed-in user's polls
   const user = await requireAuth();
   let polls: PollWithDetails[] = [];
+  let participated: PollWithDetails[] = [];
   let fetchError: unknown = null;
   try {
     polls = await getUserPolls(user.id);
+    participated = await getParticipatedPolls(user.id);
   } catch (error) {
     // Log error to server console for observability
     console.error("Failed to fetch polls:", error);
@@ -31,17 +33,17 @@ export default async function PollsPage() {
           </Button>
         </Link>
       </div>
-      {fetchError ? (
+  {fetchError ? (
         <div className="flex flex-col items-center justify-center text-center py-20">
           <h2 className="text-3xl font-bold text-red-600 dark:text-red-400 mb-4">Error Loading Polls</h2>
           <p className="text-gray-600 dark:text-gray-400 mb-8 max-w-md">
             Sorry, we couldn't load polls at this time. Please try again later.
           </p>
         </div>
-      ) : polls && polls.length > 0 ? (
+  ) : (polls && polls.length > 0 || participated && participated.length > 0) ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {/* Map over the array of polls and render a card for each one. */}
-          {polls.map((poll) => (
+      {polls.map((poll) => (
             <Link href={`/polls/${poll.id}`} key={poll.id}>
               <Card className="poll-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
                 <CardHeader>
@@ -55,6 +57,30 @@ export default async function PollsPage() {
                   </p>
                   <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
                     {poll.poll_options?.length || 0} options
+                  </p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+                    by {poll.profiles?.username || 'Anonymous'}
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          ))}
+          {participated
+            .filter((p) => !polls.some((own) => own.id === p.id))
+            .map((poll) => (
+            <Link href={`/polls/${poll.id}`} key={`v-${poll.id}`}>
+              <Card className="poll-card bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
+                <CardHeader>
+                  <CardTitle className="text-xl font-semibold text-gray-800 dark:text-white">
+                    {poll.question}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {(poll.poll_options as any[] | undefined)?.map((o: any) => o.text).join(", ") || "No options"}
+                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-4">
+                    {poll.poll_options?.length || 0} options • Participated
                   </p>
                   <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                     by {poll.profiles?.username || 'Anonymous'}

@@ -136,10 +136,9 @@ import {
   createPoll as createPollInSupabase, 
   getPoll, 
   deletePoll, 
-  togglePollStatus as togglePollStatusInSupabase,
-  updatePoll as updatePollInSupabase,
   getUserPolls 
 } from "./supabase/queries";
+import { togglePollStatus as togglePollStatusInSupabase, updatePoll as updatePollInSupabase } from "./supabase/server-queries";
 import { submitVote as submitVoteToSupabase } from "./supabase/server-queries";
 import { getCurrentUser, requireAuth } from "./auth";
 import { generatePollQRCode } from "./qr-code";
@@ -344,8 +343,12 @@ export async function handleVote(formData: FormData) {
 
   const poll = await getPoll(pollId);
   if (!poll || poll.status === "closed") {
-    // Handle poll not found or closed
-    return;
+    // Redirect back to the voting page with a flag so the UI can show a message
+    if (source === "public") {
+      redirect(`/p/${pollId}?closed=1`);
+    } else {
+      redirect(`/polls/${pollId}?closed=1`);
+    }
   }
 
   let userId: string | undefined;
@@ -388,15 +391,28 @@ export async function handleVote(formData: FormData) {
     if (poll.single_vote && userId) {
       // Double-check with server client so RLS sees auth.uid()
       const supabaseSrv = await (await import("./supabase/server")).createClient();
-      const { data: existing } = await supabaseSrv
+      // 1) Prior authenticated vote
+      const { data: existingAuth } = await supabaseSrv
         .from('votes')
         .select('id')
         .eq('poll_id', pollId)
         .eq('user_id', userId)
         .maybeSingle();
-      if (existing) {
+      // 2) Prior anonymous vote from same device (if ip+ua available)
+      let existingDevice: { id: string } | null = null;
+      if (ip_address && user_agent) {
+        const res = await supabaseSrv
+          .from('votes')
+          .select('id')
+          .eq('poll_id', pollId)
+          .eq('ip_address', ip_address)
+          .eq('user_agent', user_agent)
+          .maybeSingle();
+        existingDevice = res.data as any;
+      }
+      if (existingAuth || existingDevice) {
         // Already voted; skip insert
-  alreadyVoted = true;
+        alreadyVoted = true;
       } else {
         await submitVoteToSupabase({
           poll_id: pollId,
@@ -407,13 +423,40 @@ export async function handleVote(formData: FormData) {
         });
       }
     } else {
-      await submitVoteToSupabase({
-        poll_id: pollId,
-        option_id: selectedOptionId,
-        user_id: userId,
-        ip_address: ip_address || undefined,
-        user_agent: user_agent || undefined,
-      });
+      // Anonymous path: enforce device-level single-vote after toggle
+      if (poll.single_vote) {
+        const supabaseSrv = await (await import("./supabase/server")).createClient();
+        let hasDeviceVote = false;
+        if (ip_address && user_agent) {
+          const { data: existingAnon } = await supabaseSrv
+            .from('votes')
+            .select('id')
+            .eq('poll_id', pollId)
+            .eq('ip_address', ip_address)
+            .eq('user_agent', user_agent)
+            .maybeSingle();
+          hasDeviceVote = !!existingAnon;
+        }
+        if (hasDeviceVote) {
+          alreadyVoted = true;
+        } else {
+          await submitVoteToSupabase({
+            poll_id: pollId,
+            option_id: selectedOptionId,
+            user_id: userId,
+            ip_address: ip_address || undefined,
+            user_agent: user_agent || undefined,
+          });
+        }
+      } else {
+        await submitVoteToSupabase({
+          poll_id: pollId,
+          option_id: selectedOptionId,
+          user_id: userId,
+          ip_address: ip_address || undefined,
+          user_agent: user_agent || undefined,
+        });
+      }
     }
   } catch (error) {
     if (process.env.NODE_ENV === "development") {
@@ -463,7 +506,13 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
     revalidatePath(`/polls/${pollId}`);
     revalidatePath(`/polls/${pollId}/settings`);
     redirect(`/polls/${pollId}`);
-  } catch (error) {
+  } catch (error: any) {
+    // Allow framework redirects to bubble up (don't treat as errors)
+    const digest = typeof error?.digest === 'string' ? error.digest : '';
+    const message = typeof error?.message === 'string' ? error.message : '';
+    if (digest.startsWith('NEXT_REDIRECT') || message === 'NEXT_REDIRECT') {
+      throw error;
+    }
     if (process.env.NODE_ENV === "development") {
       console.error('Error updating poll:', error);
     }
@@ -500,7 +549,15 @@ export async function togglePollStatus(pollId: string) {
     await togglePollStatusInSupabase(pollId, user.id);
     revalidatePath(`/polls/${pollId}`);
     revalidatePath("/polls");
+  // Ensure the page refreshes to reflect new status
+  redirect(`/polls/${pollId}`);
   } catch (error) {
+    // Allow framework redirects to bubble up (don't treat as errors)
+    const digest = typeof (error as any)?.digest === 'string' ? (error as any).digest : '';
+    const message = typeof (error as any)?.message === 'string' ? (error as any).message : '';
+    if (digest.startsWith('NEXT_REDIRECT') || message === 'NEXT_REDIRECT') {
+      throw error as any;
+    }
     if (process.env.NODE_ENV === "development") {
       console.error('Error toggling poll status:', error);
     }

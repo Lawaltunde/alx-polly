@@ -12,24 +12,34 @@ type PollResultsProps = {
   pollId: string;
   initialPoll?: PollWithDetails;
   onGoBack?: () => void;
+  backPath?: string; // optional explicit back path (e.g., public poll page)
 };
 
-export default function PollResults({ pollId, initialPoll, onGoBack }: PollResultsProps) {
+export default function PollResults({ pollId, initialPoll, onGoBack, backPath }: PollResultsProps) {
   const [poll, setPoll] = useState<PollWithDetails | null>(initialPoll || null);
   const [optionResults, setOptionResults] = useState<Array<{ id: string; text: string; vote_count: number }>>([]);
 
   useEffect(() => {
     const fetchAndSetData = async () => {
-      // Always fetch poll if missing or incomplete
-      if (!initialPoll) {
-        const pollData = await getPoll(pollId);
-        setPoll(pollData);
+      try {
+        // Always fetch poll if missing or incomplete
+        if (!initialPoll) {
+          const pollData = await getPoll(pollId);
+          if (pollData) setPoll(pollData);
+        }
+      } catch (e) {
+        if (process.env.NODE_ENV === 'development') console.warn('Failed to fetch poll in PollResults:', e);
       }
-      // Fetch poll option results from backend view
-      const results = await getPollOptionResults(pollId);
-      setOptionResults(results);
-      if (process.env.NODE_ENV === "development") {
-        console.log("Poll option results:", results);
+      try {
+        // Fetch poll option results from backend view; if blocked by RLS, fallback to zero counts
+        const results = await getPollOptionResults(pollId);
+        setOptionResults(results ?? []);
+        if (process.env.NODE_ENV === "development") {
+          console.log("Poll option results:", results);
+        }
+      } catch (e) {
+        setOptionResults([]);
+        if (process.env.NODE_ENV === 'development') console.warn('Failed to fetch option results:', e);
       }
     };
     fetchAndSetData();
@@ -86,12 +96,12 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
     totalVotes = optionResults.reduce((sum, opt) => sum + (opt.vote_count || 0), 0);
   }
 
-  if (!poll) {
+  if (!poll && optionResults.length === 0) {
     return <div>Loading poll results...</div>;
   }
 
   // Data validation and error surfacing
-  if (!poll.poll_options || poll.poll_options.length === 0) {
+  if (poll && (!poll.poll_options || poll.poll_options.length === 0)) {
     return <div className="text-red-500">Error: No poll options found for this poll.</div>;
   }
   // No votes logic needed; results come from backend aggregation
@@ -105,16 +115,32 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{poll.question}</CardTitle>
+        <CardTitle>{poll?.question || 'Poll results'}</CardTitle>
       </CardHeader>
       <CardContent>
         <PollChart options={chartOptions} totalVotes={totalVotes} />
         <p className="text-right mt-4 text-sm text-gray-500">{`Total Votes: ${totalVotes}`}</p>
         <button
-          onClick={onGoBack ?? (() => window.location.href = '/polls')}
+          onClick={
+            onGoBack
+              ?? (() => {
+                // Prefer explicit backPath when provided
+                if (backPath) {
+                  window.location.href = backPath;
+                  return;
+                }
+                // Infer from current path: if public namespace, go to public poll
+                const path = typeof window !== 'undefined' ? window.location.pathname : '';
+                if (path.startsWith('/p/')) {
+                  window.location.href = `/p/${pollId}`;
+                } else {
+                  window.location.href = '/polls';
+                }
+              })
+          }
           className="w-full mt-4 py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
         >
-          Go Back to Polls
+          Go Back
         </button>
       </CardContent>
     </Card>

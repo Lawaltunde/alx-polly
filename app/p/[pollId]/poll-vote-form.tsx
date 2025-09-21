@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { PollWithDetails } from '@/app/lib/types';
 import PollResults from '../../components/shared/PollResults';
 import { handleVote } from '@/app/lib/actions';
+import { toast } from 'sonner';
 
 interface PollVoteFormProps {
   poll: PollWithDetails;
@@ -16,6 +17,18 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   const [voted, setVoted] = useState(false);
 
   // Realtime handling moved to results page; stick to server action for vote.
+
+  // Show a friendly notice if poll is closed
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('closed') === '1') {
+      toast.warning('This poll is closed and no longer accepts votes.');
+      params.delete('closed');
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   if (voted) {
     return <PollResults pollId={poll.id} initialPoll={poll} onGoBack={() => setVoted(false)} />;

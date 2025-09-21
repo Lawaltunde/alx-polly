@@ -6,6 +6,9 @@ import React from 'react';
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-key';
 
+// Mock Next.js server-only marker to a no-op so Vitest can resolve it
+vi.mock('server-only', () => ({}));
+
 // Mock Next.js router
 vi.mock('next/navigation', () => ({
   useRouter: () => ({

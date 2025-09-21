@@ -1,6 +1,6 @@
 import 'server-only';
 import { createClient } from './server';
-import type { VoteData } from '../types';
+import type { VoteData, UpdatePollData, Poll, PollWithDetails } from '../types';
 
 // Server-only queries that require Next.js server APIs (cookies/headers) or SSR Supabase client
 export async function submitVote(voteData: VoteData): Promise<void> {
@@ -53,4 +53,173 @@ export async function submitVote(voteData: VoteData): Promise<void> {
     }
     throw new Error('Failed to submit vote');
   }
+}
+
+// Update a poll (server-only to ensure auth via RLS)
+export async function updatePoll(pollId: string, pollData: UpdatePollData, userId: string): Promise<Poll> {
+  const supabase = await createClient();
+
+  // Ownership check
+  const { data: existingPoll, error: fetchError } = await supabase
+    .from('polls')
+    .select('created_by')
+    .eq('id', pollId)
+    .maybeSingle();
+
+  if (fetchError || !existingPoll) {
+    throw new Error('Poll not found');
+  }
+  if (existingPoll.created_by !== userId) {
+    throw new Error('Unauthorized to update this poll');
+  }
+
+  const updates: any = {
+    question: pollData.question,
+    description: pollData.description,
+    require_auth: pollData.require_auth,
+    single_vote: pollData.single_vote,
+    status: pollData.status,
+    expires_at: pollData.expires_at?.toISOString(),
+  };
+  if (typeof pollData.visibility !== 'undefined') updates.visibility = pollData.visibility;
+  if (typeof pollData.results_visibility !== 'undefined') updates.results_visibility = pollData.results_visibility;
+
+  const { data: poll, error: updateError } = await supabase
+    .from('polls')
+    .update(updates)
+    .eq('id', pollId)
+    .select()
+    .maybeSingle();
+
+  if (updateError) {
+    throw new Error('Failed to update poll');
+  }
+
+  if (poll) return poll as Poll;
+  // Fallback fetch if row not returned
+  const { data: fetched } = await supabase
+    .from('polls')
+    .select('*')
+    .eq('id', pollId)
+    .maybeSingle();
+  if (!fetched) throw new Error('Failed to update poll');
+  return fetched as Poll;
+}
+
+// Toggle poll status (server-only)
+export async function togglePollStatus(pollId: string, userId: string): Promise<Poll> {
+  const supabase = await createClient();
+
+  const { data: existingPoll, error: fetchError } = await supabase
+    .from('polls')
+    .select('created_by, status')
+    .eq('id', pollId)
+    .maybeSingle();
+
+  if (fetchError || !existingPoll) {
+    throw new Error('Poll not found');
+  }
+  if (existingPoll.created_by !== userId) {
+    throw new Error('Unauthorized to update this poll');
+  }
+
+  const newStatus = existingPoll.status === 'open' ? 'closed' : 'open';
+
+  const { data: poll, error: updateError } = await supabase
+    .from('polls')
+    .update({ status: newStatus })
+    .eq('id', pollId)
+    .select()
+    .maybeSingle();
+
+  if (updateError) {
+    throw new Error('Failed to toggle poll status');
+  }
+  if (poll) return poll as Poll;
+  const { data: fetched } = await supabase
+    .from('polls')
+    .select('*')
+    .eq('id', pollId)
+    .maybeSingle();
+  if (!fetched) throw new Error('Failed to toggle poll status');
+  return fetched as Poll;
+}
+
+// Fetch a poll with SSR client so RLS uses the authenticated user (owners can view closed polls)
+export async function getPoll(pollId: string): Promise<PollWithDetails | null> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('polls')
+    .select(`
+      *,
+      poll_options (
+        id,
+        text,
+        order_index,
+        votes:votes(count)
+      ),
+      profiles (
+        id,
+        username,
+        full_name,
+        avatar_url
+      )
+    `)
+    .eq('id', pollId)
+    .maybeSingle();
+
+  if (error) {
+    // If not found due to RLS or genuinely missing, return null
+    return null;
+  }
+  return (data as any) || null;
+}
+
+// Fetch all polls for a user (SSR to ensure auth RLS applies and includes closed polls)
+export async function getUserPolls(userId: string): Promise<PollWithDetails[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('polls')
+    .select(`
+      *,
+      poll_options (*),
+      profiles ( id, username, full_name, avatar_url )
+    `)
+    .eq('created_by', userId)
+    .order('created_at', { ascending: false });
+  if (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching user polls (SSR):', error);
+    }
+    return [];
+  }
+  return (data as any) || [];
+}
+
+// Fetch polls the user has participated in (voted on)
+export async function getParticipatedPolls(userId: string): Promise<PollWithDetails[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from('polls')
+    .select(`
+      *,
+      poll_options (*),
+      profiles ( id, username, full_name, avatar_url )
+    `)
+    .in('id',
+      (
+        await supabase
+          .from('votes')
+          .select('poll_id')
+          .eq('user_id', userId)
+      ).data?.map((v: any) => v.poll_id) || []
+    )
+    .order('created_at', { ascending: false });
+  if (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error fetching participated polls (SSR):', error);
+    }
+    return [];
+  }
+  return (data as any) || [];
 }
