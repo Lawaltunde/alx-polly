@@ -6,6 +6,7 @@ import { getPoll, getPollOptionResults } from "@/app/lib/supabase/queries";
 import { PollWithDetails, Vote } from "@/app/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PollChart from "./PollChart";
+import { toast } from "sonner";
 
 type PollResultsProps = {
   pollId: string;
@@ -33,6 +34,19 @@ export default function PollResults({ pollId, initialPoll, onGoBack }: PollResul
     };
     fetchAndSetData();
   }, [pollId, initialPoll]);
+
+  // Show a friendly notice if user already voted
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('already') === '1') {
+      toast.info('You already voted on this poll. Duplicate votes are not allowed.');
+      // Remove the flag from URL without reload
+      params.delete('already');
+      const newUrl = `${window.location.pathname}${params.toString() ? `?${params.toString()}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+  }, []);
 
   const { supabase, ready } = useSupabaseClient();
 

@@ -340,6 +340,7 @@ export async function handleVote(formData: FormData) {
   const pollId = formData.get("pollId") as string;
   const selectedOptionId = formData.get("selectedOptionId") as string;
   const source = formData.get("source") as "public" | "dashboard";
+  let alreadyVoted = false;
 
   const poll = await getPoll(pollId);
   if (!poll || poll.status === "closed") {
@@ -372,12 +373,13 @@ export async function handleVote(formData: FormData) {
     const votedCookie = cookieStore.get(cookieKey);
     if (votedCookie?.value === '1') {
       // Already voted from this browser; just redirect to results
+      alreadyVoted = true;
       if (source === "public") {
         revalidatePath(`/p/${pollId}`);
-        redirect(`/p/${pollId}/results`);
+        redirect(`/p/${pollId}/results?already=1`);
       } else {
         revalidatePath(`/polls/${pollId}`);
-        redirect(`/polls/${pollId}/results`);
+        redirect(`/polls/${pollId}/results?already=1`);
       }
     }
   }
@@ -394,6 +396,7 @@ export async function handleVote(formData: FormData) {
         .maybeSingle();
       if (existing) {
         // Already voted; skip insert
+  alreadyVoted = true;
       } else {
         await submitVoteToSupabase({
           poll_id: pollId,
@@ -427,11 +430,11 @@ export async function handleVote(formData: FormData) {
   }
 
   if (source === "public") {
-    revalidatePath(`/p/${pollId}`);
-    redirect(`/p/${pollId}/results`);
+  revalidatePath(`/p/${pollId}`);
+  redirect(`/p/${pollId}/results${alreadyVoted ? '?already=1' : ''}`);
   } else {
-    revalidatePath(`/polls/${pollId}`);
-    redirect(`/polls/${pollId}/results`);
+  revalidatePath(`/polls/${pollId}`);
+  redirect(`/polls/${pollId}/results${alreadyVoted ? '?already=1' : ''}`);
   }
 }
 
