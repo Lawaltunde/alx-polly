@@ -24,7 +24,7 @@ export default async function PublicPollResultsPage({ params }: { params: Promis
 
   return (
     <div className="container mx-auto p-4">
-  <PollResults pollId={pollId} initialPoll={poll || undefined as any} backPath={`/p/${pollId}`} />
+      <PollResults pollId={pollId} initialPoll={poll ?? undefined} backPath={`/p/${pollId}`} />
     </div>
   );
 }

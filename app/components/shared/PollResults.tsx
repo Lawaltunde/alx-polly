@@ -3,20 +3,23 @@
 import { useEffect, useState } from "react";
 import { useSupabaseClient } from "@/app/lib/supabase/useSupabaseClient";
 import { getPoll, getPollOptionResults } from "@/app/lib/supabase/queries";
-import { PollWithDetails, Vote } from "@/app/lib/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import PollChart from "./PollChart";
 import { toast } from "sonner";
 
+// Ensure consistent types; use type-only import to avoid runtime bundling
+import type { Poll, PollWithDetails } from '@/app/lib/types';
+
 type PollResultsProps = {
   pollId: string;
-  initialPoll?: PollWithDetails;
+  initialPoll?: Poll | undefined;
   onGoBack?: () => void;
   backPath?: string; // optional explicit back path (e.g., public poll page)
 };
 
 export default function PollResults({ pollId, initialPoll, onGoBack, backPath }: PollResultsProps) {
-  const [poll, setPoll] = useState<PollWithDetails | null>(initialPoll || null);
+  type PollLike = Poll | PollWithDetails;
+  const [poll, setPoll] = useState<PollLike | null>(initialPoll ?? null);
   const [optionResults, setOptionResults] = useState<Array<{ id: string; text: string; vote_count: number }>>([]);
 
   useEffect(() => {
@@ -25,7 +28,7 @@ export default function PollResults({ pollId, initialPoll, onGoBack, backPath }:
         // Always fetch poll if missing or incomplete
         if (!initialPoll) {
           const pollData = await getPoll(pollId);
-          if (pollData) setPoll(pollData);
+          if (pollData) setPoll(pollData as PollLike);
         }
       } catch (e) {
         if (process.env.NODE_ENV === 'development') console.warn('Failed to fetch poll in PollResults:', e);
@@ -75,7 +78,7 @@ export default function PollResults({ pollId, initialPoll, onGoBack, backPath }:
         },
         async () => {
           const updatedPoll = await getPoll(poll.id);
-          setPoll(updatedPoll);
+          setPoll((updatedPoll ?? null) as PollLike | null);
           if (process.env.NODE_ENV === "development") {
             console.log("Realtime poll fetched:", updatedPoll);
           }
@@ -100,11 +103,7 @@ export default function PollResults({ pollId, initialPoll, onGoBack, backPath }:
     return <div>Loading poll results...</div>;
   }
 
-  // Data validation and error surfacing
-  if (poll && (!poll.poll_options || poll.poll_options.length === 0)) {
-    return <div className="text-red-500">Error: No poll options found for this poll.</div>;
-  }
-  // No votes logic needed; results come from backend aggregation
+  // No hard error on missing options; results may still be viewable via aggregation/RLS
 
   const chartOptions = optionResults.map(option => ({
     id: option.id,
