@@ -277,6 +277,21 @@ export async function listPollsForAdmin(params: {
   pageCount: number;
 }> {
   const supabase = await createClient();
+  // Authorization guard: only admins may list all polls
+  const { data: authInfo, error: authError } = await supabase.auth.getUser();
+  if (authError || !authInfo?.user) {
+    throw new Error('Unauthorized: authentication required');
+  }
+  const { data: isAdmin, error: adminCheckError } = await supabase.rpc('is_admin', { uid: authInfo.user.id });
+  if (adminCheckError) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Authorization check failed (is_admin RPC):', adminCheckError);
+    }
+    throw new Error('Authorization check failed');
+  }
+  if (!isAdmin) {
+    throw new Error('Unauthorized: admin only');
+  }
   const page = Math.max(1, params.page ?? 1);
   const pageSize = Math.min(50, Math.max(1, params.pageSize ?? 10));
   const from = (page - 1) * pageSize;
