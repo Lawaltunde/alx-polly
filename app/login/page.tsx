@@ -25,8 +25,8 @@ export default function LoginPage() {
   const next = searchParams?.get('next') ?? '';
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-      <Card className="w-full max-w-md shadow-lg">
+  <div className="flex flex-col justify-center items-center h-screen bg-background">
+  <Card className="w-full max-w-md shadow-lg bg-card border border-border">
         <form action={dispatch}>
           {next && <input type="hidden" name="next" value={next} />}
           <CardHeader className="text-center">

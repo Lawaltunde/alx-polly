@@ -118,7 +118,7 @@ export default function PollResults({ pollId, initialPoll, onGoBack, backPath }:
       </CardHeader>
       <CardContent>
         <PollChart options={chartOptions} totalVotes={totalVotes} />
-        <p className="text-right mt-4 text-sm text-gray-500">{`Total Votes: ${totalVotes}`}</p>
+  <p className="text-right mt-4 text-sm text-muted-foreground">{`Total Votes: ${totalVotes}`}</p>
         <button
           onClick={
             onGoBack
@@ -137,7 +137,7 @@ export default function PollResults({ pollId, initialPoll, onGoBack, backPath }:
                 }
               })
           }
-          className="w-full mt-4 py-2 px-4 bg-gray-200 dark:bg-gray-700 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600"
+          className="w-full mt-4 py-2 px-4 bg-muted rounded-md hover:brightness-110"
         >
           Go Back
         </button>

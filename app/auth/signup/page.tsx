@@ -22,8 +22,8 @@ export default function SignupPage() {
   const [state, dispatch] = useFormState(signup, initialState);
 
   return (
-    <div className="flex flex-col justify-center items-center h-screen bg-gray-50">
-      <Card className="w-full max-w-md shadow-lg">
+  <div className="flex flex-col justify-center items-center h-screen bg-background">
+      <Card className="w-full max-w-md shadow-lg bg-card border border-border">
         <form action={dispatch}>
           <CardHeader className="text-center">
             <CardTitle className="text-3xl font-bold">Create an Account</CardTitle>

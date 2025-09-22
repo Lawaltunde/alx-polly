@@ -188,13 +188,7 @@
     }
 }
 
-body {
-    background-image: linear-gradient(to top, #cfd9df 0%, #e2ebf0 100%);
-}
-
-.dark body {
-    background-image: linear-gradient(to right, #1f2937 0%, #111827 100%);
-}
+/* Use token backgrounds only; avoid global gradients for clarity */
 
 .main-container {
     max-width: 1200px;

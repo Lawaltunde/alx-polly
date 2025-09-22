@@ -35,10 +35,10 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
   }
 
   return (
-    <div className="w-full max-w-2xl p-8 space-y-8 bg-white rounded-2xl shadow-lg dark:bg-gray-800">
+  <div className="w-full max-w-2xl p-8 space-y-8 bg-card text-foreground rounded-2xl shadow-lg border border-border">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-gray-800 dark:text-white">{poll.question}</h1>
-        <p className="mt-2 text-lg text-gray-600 dark:text-gray-300">
+  <h1 className="text-4xl font-bold text-foreground">{poll.question}</h1>
+  <p className="mt-2 text-lg text-muted-foreground">
           Cast your vote by selecting one of the options below.
         </p>
       </div>
@@ -69,7 +69,7 @@ export default function PollVoteForm({ poll: initialPoll }: PollVoteFormProps) {
                   onChange={() => setSelectedOption(option.id)}
                   className="hidden"
                 />
-                <span className="text-xl text-gray-700 dark:text-gray-200">{option.text}</span>
+                <span className="text-xl text-foreground">{option.text}</span>
               </label>
             </div>
           ))}

@@ -66,7 +66,7 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
   if (!open) return null;
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
       tabIndex={-1}
       aria-modal="true"
       role="dialog"
@@ -76,12 +76,12 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
     >
       <div
         ref={dialogRef}
-        className="bg-white dark:bg-gray-900 rounded-lg shadow-lg p-6 min-w-[320px] max-w-full relative outline-none"
+        className="bg-card text-foreground rounded-lg shadow-lg p-6 min-w-[320px] max-w-full relative outline-none border border-border"
         tabIndex={-1}
       >
         {children}
         <button
-          className="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+          className="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:text-foreground hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-ring"
           onClick={() => onOpenChange(false)}
           aria-label="Close"
           tabIndex={0}

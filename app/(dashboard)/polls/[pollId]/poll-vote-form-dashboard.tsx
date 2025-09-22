@@ -31,7 +31,7 @@ export default function PollVoteFormDashboard({ poll }: PollVoteFormDashboardPro
           <div key={option.id}>
             <label
               htmlFor={option.id}
-              className={`w-full text-left p-4 border rounded-lg flex justify-between items-center cursor-pointer transition-colors ${selectedOption === option.id ? 'bg-blue-100 border-blue-500' : 'bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'}`}
+              className={`w-full text-left p-4 border rounded-lg flex justify-between items-center cursor-pointer transition-colors ${selectedOption === option.id ? 'bg-primary/10 border-primary' : 'bg-card hover:bg-muted'}`}
             >
               <span>{option.text}</span>
               <input

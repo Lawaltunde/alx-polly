@@ -36,17 +36,17 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="flex flex-col justify-between w-64 p-4 bg-white border-r dark:bg-gray-800 dark:border-gray-700">
+    <aside className="flex flex-col justify-between w-64 p-4 bg-card border-r border-border">
       <nav className="flex flex-col space-y-2">
         <Link
           href="/polls"
-          className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-4 py-2 rounded-md hover:bg-muted"
         >
           Dashboard
         </Link>
         <Link
           href="/polls/new"
-          className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-4 py-2 rounded-md hover:bg-muted"
         >
           New Poll
         </Link>
@@ -54,14 +54,14 @@ export default function Sidebar() {
           <Link
             href="/admin"
             aria-label="Open Admin Panel"
-            className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+            className="px-4 py-2 rounded-md hover:bg-muted"
           >
             Admin Panel
           </Link>
         )}
         <Link
           href="/settings"
-          className="px-4 py-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700"
+          className="px-4 py-2 rounded-md hover:bg-muted"
         >
           Settings
         </Link>

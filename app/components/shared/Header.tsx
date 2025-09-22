@@ -37,8 +37,8 @@ export default function Header() {
     return () => { active = false; };
   }, [user]);
   return (
-    <header className="flex items-center justify-between p-4 border-b">
-      <h1 className="text-2xl font-bold text-gray-800 dark:text-white">
+    <header className="flex items-center justify-between p-4 border-b border-border">
+      <h1 className="text-2xl font-bold text-foreground">
         <Link href="/">Polly</Link>
       </h1>
       <div className="flex items-center space-x-4">
