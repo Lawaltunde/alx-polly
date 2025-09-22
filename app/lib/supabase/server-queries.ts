@@ -252,3 +252,83 @@ export async function getParticipatedPolls(userId: string): Promise<PollWithDeta
   }
   return Array.from(unique.values());
 }
+
+// Admin: list all polls with pagination and optional search/status filter
+export async function listPollsForAdmin(params: {
+  page?: number;
+  pageSize?: number;
+  q?: string | null;
+  status?: 'open' | 'closed' | null;
+  ownerUsername?: string | null;
+  sort?: 'created_at' | 'question' | 'status';
+  dir?: 'asc' | 'desc';
+}): Promise<{
+  items: Array<{
+    id: string;
+    question: string;
+    status: string;
+    created_at: string;
+    owner_username: string | null;
+    total_votes: number;
+  }>;
+  total: number;
+  page: number;
+  pageSize: number;
+  pageCount: number;
+}> {
+  const supabase = await createClient();
+  const page = Math.max(1, params.page ?? 1);
+  const pageSize = Math.min(50, Math.max(1, params.pageSize ?? 10));
+  const from = (page - 1) * pageSize;
+  const to = from + pageSize - 1;
+
+  let query = supabase
+    .from('polls')
+    .select(
+      `id, question, status, created_at, created_by,
+       profiles(id, username),
+       votes(count)`,
+      { count: 'exact' }
+    )
+    .range(from, to);
+
+  if (params.q && params.q.trim().length > 0) {
+    // Search by question text (simple ilike)
+    query = query.ilike('question', `%${params.q.trim()}%`);
+  }
+  if (params.status) {
+    query = query.eq('status', params.status);
+  }
+  if (params.ownerUsername && params.ownerUsername.trim().length > 0) {
+    // Filter on joined profile username using dot path (PostgREST supports dot notation on embedded resources)
+    query = (query as any).eq('profiles.username', params.ownerUsername.trim());
+  }
+
+  const sort = params.sort ?? 'created_at';
+  const dir = params.dir ?? 'desc';
+  // Only sort by columns that exist on polls; default to created_at desc
+  query = query.order(sort, { ascending: dir === 'asc' });
+
+  const { data, error, count } = await query;
+  if (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Error listing polls for admin:', error);
+    }
+    return { items: [], total: 0, page, pageSize, pageCount: 0 };
+  }
+
+  const items = (data ?? []).map((row: any) => ({
+    id: row.id as string,
+    question: row.question as string,
+    status: row.status as string,
+    created_at: row.created_at as string,
+    owner_username: row.profiles?.username ?? null,
+    total_votes: Array.isArray(row.votes) && row.votes[0] && typeof row.votes[0].count === 'number'
+      ? row.votes[0].count
+      : 0,
+  }));
+
+  const total = typeof count === 'number' ? count : items.length;
+  const pageCount = total === 0 ? 0 : Math.ceil(total / pageSize);
+  return { items, total, page, pageSize, pageCount };
+}

@@ -524,6 +524,8 @@ export async function updatePoll(pollId: string, prevState: any, formData: FormD
 
 export async function deletePollAction(formData: FormData) {
   const pollId = formData.get("pollId") as string;
+  const redirectToRaw = formData.get('redirectTo');
+  const redirectTo = typeof redirectToRaw === 'string' && redirectToRaw.startsWith('/') ? redirectToRaw : null;
   const user = await requireAuth();
   try {
     if (process.env.NODE_ENV === "development") {
@@ -531,8 +533,12 @@ export async function deletePollAction(formData: FormData) {
     }
     const supabase = await createClient();
     await (await import("@/app/lib/supabase/queries")).deletePoll(supabase, pollId, user.id);
+    // Revalidate common views
     revalidatePath("/polls");
-    redirect("/polls");
+    if (redirectTo && redirectTo.startsWith('/admin')) {
+      revalidatePath('/admin');
+    }
+    redirect(redirectTo || "/polls");
   } catch (error: any) {
     if (error && error.digest && String(error.digest).startsWith('NEXT_REDIRECT')) {
       throw error;
