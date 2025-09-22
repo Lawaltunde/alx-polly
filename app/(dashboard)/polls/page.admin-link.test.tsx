@@ -26,7 +26,7 @@ describe('PollsPage Admin Panel visibility', () => {
 
     render(await PollsPage());
 
-    const adminLink = screen.getByRole('link', { name: 'Admin Panel' });
+  const adminLink = screen.getByRole('link', { name: 'Open Admin Panel' });
     expect(adminLink).toHaveAttribute('href', '/admin');
   });
 });

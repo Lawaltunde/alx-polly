@@ -43,19 +43,20 @@ export async function getProfile(userId: string) {
 }
 
 export async function getUserRole(userId?: string) {
-  const user = userId ? { id: userId } : await getCurrentUser();
-  if (!user) return null;
+  const currentUser = userId ? null : await getCurrentUser();
+  const id: string | undefined = userId ?? currentUser?.id;
+  if (!id) return null;
   const supabase = await createClient();
-  const { data, error } = await supabase
+  const { data, error }: { data: Pick<Profile, 'role'> | null; error: unknown } = await supabase
     .from('profiles')
     .select('role')
-    .eq('id', (user as any).id)
+    .eq('id', id)
     .single();
   if (error) {
     console.error('Error fetching user role:', error);
     return null;
   }
-  return (data as Pick<Profile, 'role'> | null)?.role ?? null;
+  return data?.role ?? null;
 }
 
 export async function requireAdmin() {

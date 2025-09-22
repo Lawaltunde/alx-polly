@@ -1,6 +1,7 @@
 import 'server-only';
 import { createClient } from './server';
 import type { VoteData, UpdatePollData, Poll, PollWithDetails } from '../types';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Server-only queries that require Next.js server APIs (cookies/headers) or SSR Supabase client
 export async function submitVote(voteData: VoteData): Promise<void> {
@@ -69,13 +70,7 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
   if (fetchError || !existingPoll) {
     throw new Error('Poll not found');
   }
-  if (existingPoll.created_by !== userId) {
-    // Admin bypass
-    const { data: isAdmin } = await (supabase as any).rpc?.('is_admin', { uid: userId }) ?? { data: false };
-    if (!isAdmin) {
-      throw new Error('Unauthorized to update this poll');
-    }
-  }
+  await checkPollEditPermission(supabase, userId, existingPoll.created_by);
 
   const updates: Partial<{
     question: string;
@@ -131,12 +126,7 @@ export async function togglePollStatus(pollId: string, userId: string): Promise<
   if (fetchError || !existingPoll) {
     throw new Error('Poll not found');
   }
-  if (existingPoll.created_by !== userId) {
-    const { data: isAdmin } = await (supabase as any).rpc?.('is_admin', { uid: userId }) ?? { data: false };
-    if (!isAdmin) {
-      throw new Error('Unauthorized to update this poll');
-    }
-  }
+  await checkPollEditPermission(supabase, userId, existingPoll.created_by);
 
   const newStatus = existingPoll.status === 'open' ? 'closed' : 'open';
 
@@ -158,6 +148,21 @@ export async function togglePollStatus(pollId: string, userId: string): Promise<
     .maybeSingle();
   if (!fetched) throw new Error('Failed to toggle poll status');
   return fetched as Poll;
+}
+
+// Shared authorization helper: owner OR admin via RPC
+async function checkPollEditPermission(supabase: SupabaseClient, userId: string, createdBy: string): Promise<void> {
+  if (createdBy === userId) return;
+  const { data, error } = await supabase.rpc('is_admin', { uid: userId });
+  if (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Authorization check failed (is_admin RPC):', error);
+    }
+    throw new Error('Authorization check failed');
+  }
+  if (!data) {
+    throw new Error('Unauthorized to update this poll');
+  }
 }
 
 // Fetch a poll with SSR client so RLS uses the authenticated user (owners can view closed polls)

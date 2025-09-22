@@ -67,78 +67,136 @@ This application is designed to be a real-time polling system where users can si
 - **Real-Time Voting**: Vote on polls and see the results update live.
 - **User Dashboard**: View and manage your polls.
 
+# Polly – Real‑Time Polls with Next.js + Supabase
+
+Polly is a full‑stack polling app where users create polls, vote, and view results. It uses RLS‑secured Supabase with role‑based access (admin vs user), a modern Next.js App Router UI, and a fully tested workflow.
+
+## Features
+
+- Authentication (email/PKCE via Supabase)
+- Create/manage polls with options
+- Vote and view results
+- Share via QR code (mobile friendly)
+- Dashboard with your polls and participation
+- Admin role and panel (guarded): manage across polls
+- Secure RLS policies with admin bypass helper
+- Tests: unit + integration with Vitest and Testing Library
+
 ## Tech Stack
 
-- **Framework**: [Next.js](https://nextjs.org/) (v14+)
-- **Database**: [Supabase](https://supabase.io/) (PostgreSQL)
-- **Styling**: [Tailwind CSS](https://tailwindcss.com/)
-- **UI Components**: [shadcn/ui](https://ui.shadcn.com/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Testing**: [Vitest](https://vitest.dev/)
+- Framework: Next.js 15 (App Router), React 18, TypeScript
+- Backend: Supabase (PostgreSQL, RLS), @supabase/ssr
+- Auth: @supabase/auth-helpers-nextjs
+- UI: Tailwind CSS v4, shadcn/ui components, lucide-react icons, next-themes, sonner
+- QR: qrcode
+- Testing: Vitest, @testing-library/react, @testing-library/user-event, jsdom
 
-## Setup and Installation
+## Architecture highlights
 
-To get the project up and running on your local machine, follow these steps:
+- App Router with server components and server actions
+- Supabase SSR client for authenticated server data
+- Strict RLS with public.is_admin(uid) helper for admin bypass
+- Guarded routes: requireAuth and requireAdmin
+- Clean separation of SSR queries vs client helpers
 
-### 1. Clone the Repository
+## Getting Started
+
+Prerequisites:
+- Node.js 18+ and npm
+- A Supabase project
+
+1) Clone
 
 ```bash
-git clone https://github.com/your-username/alx-polly.git
+git clone https://github.com/Lawaltunde/alx-polly.git
 cd alx-polly
 ```
 
-### 2. Install Dependencies
+2) Install
 
 ```bash
 npm install
 ```
 
-### 3. Set Up Supabase
+3) Configure environment
 
-1.  **Create a Supabase Project**: Go to [Supabase](https://supabase.io/) and create a new project.
-2.  **Database Schema**: In the Supabase SQL Editor, run the schema from `supabase/migrations/001_initial_schema.sql` to set up the necessary tables and policies.
-3.  **Get API Keys**: In your Supabase project settings, find your **Project URL** and **anon key**.
-
-### 4. Configure Environment Variables
-
-Create a `.env.local` file in the root of the project and add your Supabase credentials:
+Create `.env.local` in the project root:
 
 ```bash
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
 
-## How to Run the App
+4) Initialize the database
 
-To start the development server, run the following command:
+Option A – via Supabase SQL editor (manual):
+- Open Supabase Dashboard → SQL → run these in order:
+    1. `supabase/migrations/001_initial_schema.sql`
+    2. `supabase/migrations/002_roles.sql`
+    3. `supabase/migrations/003_admin_policies.sql`
+    4. Remaining files in `supabase/migrations/` as needed
+
+Option B – via Supabase CLI (if configured):
+
+```bash
+# From the repo root (requires supabase CLI and a linked project)
+supabase db reset
+```
+
+5) Promote an admin (so the Admin Panel becomes visible)
+
+In Supabase SQL editor, replace <USER_UUID> with your auth user id:
+
+```sql
+update public.profiles
+set role = 'admin'
+where id = '<USER_UUID>';
+
+select id, role from public.profiles where id = '<USER_UUID>';
+```
+
+6) Run the app
 
 ```bash
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+Open http://localhost:3000
 
-## Usage Examples
+## Usage
 
-### Creating a Poll
+- Create a poll: Dashboard → Create Poll
+- Vote: Open a poll → select an option → Vote
+- Share: Use the QR code button on a poll
+- Admin Panel: As admin, visit /polls and click “Admin Panel” (or go to /admin)
 
-1.  Log in to your account.
-2.  Navigate to the **Polls** page from the user menu.
-3.  Click the **Create Poll** button.
-4.  Fill in the poll question and options, then submit.
+## Scripts
 
-### Voting on a Poll
+- Dev: `npm run dev`
+- Build: `npm run build`
+- Start: `npm start`
+- Test: `npm test`
+- Test (watch/UI/coverage): `npm run test:watch` | `npm run test:ui` | `npm run test:coverage`
 
-1.  From the main dashboard, click on any poll to view it.
-2.  Select an option and click the **Vote** button.
-3.  The poll results will update in real-time.
-
-## Running Tests
-
-This project uses Vitest for testing. To run the test suite, use the following command:
+## Testing
 
 ```bash
 npm test
 ```
 
-This will run all the tests and provide a summary of the results.
+Vitest runs unit and integration tests (Polling pages, admin actions, UI components). Test helpers stub Next.js routing and Supabase clients.
+
+## Deployment
+
+- Vercel is recommended for Next.js. Set env vars (URL and anon key) in your project settings.
+- Ensure migrations are applied to the production database before first run.
+
+## Troubleshooting
+
+- Admin button not visible: ensure `profiles.role = 'admin'` for your user, then log out/in and refresh `/polls`.
+- RLS errors: confirm all migrations ran (001 → latest) and your session is authenticated.
+- Tests failing resolving `server-only`: test config aliases it; run tests via `npm test`.
+
+---
+
+Made with Next.js + Supabase. Contributions and issues are welcome.

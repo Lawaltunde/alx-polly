@@ -1,10 +1,17 @@
 import { createClient } from "./client";
 
-export async function getProfile(userId: string) {
+export type ProfileRow = {
+  id: string;
+  username?: string | null;
+  avatar_url?: string | null;
+  role?: 'user' | 'admin' | null;
+};
+
+export async function getProfile(userId: string): Promise<ProfileRow | null> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, username, avatar_url")
+    .select("id, username, avatar_url, role")
     .eq("id", userId)
     .single();
   if (error) {
@@ -13,5 +20,5 @@ export async function getProfile(userId: string) {
     }
     return null;
   }
-  return data;
+  return data as ProfileRow;
 }

@@ -3,53 +3,31 @@
 import Link from "next/link";
 import { useAuth } from "@/app/context/AuthContext";
 import React from "react";
-import { getProfile } from "@/app/lib/supabase/profile";
+import { getProfile, type ProfileRow } from "@/app/lib/supabase/profile";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function Sidebar() {
 
   const { user, refreshUser } = useAuth();
-  const [profile, setProfile] = React.useState<{ avatar_url?: string; username?: string } | null>(null);
+  const [profile, setProfile] = React.useState<ProfileRow | null>(null);
   const [isAdmin, setIsAdmin] = React.useState(false);
 
   async function fetchProfile() {
-    if (user?.id) {
-      const data = await getProfile(user.id);
-      setProfile(data);
+    if (!user?.id) {
+      setProfile(null);
+      setIsAdmin(false);
+      return;
     }
+    const data = await getProfile(user.id);
+    setProfile(data);
+    setIsAdmin(data?.role === 'admin');
   }
 
   React.useEffect(() => {
     fetchProfile();
   }, [user?.id]);
 
-  // Check role to show Admin Panel link
-  React.useEffect(() => {
-    let active = true;
-    (async () => {
-      if (!user?.id) {
-        if (active) setIsAdmin(false);
-        return;
-      }
-      try {
-        const { createClient } = await import("@/app/lib/supabase/client");
-        const supabase = await createClient();
-        const { data, error } = await supabase
-          .from("profiles")
-          .select("role")
-          .eq("id", user.id)
-          .single();
-        if (!error && data?.role === "admin") {
-          if (active) setIsAdmin(true);
-        } else if (active) {
-          setIsAdmin(false);
-        }
-      } catch (_) {
-        if (active) setIsAdmin(false);
-      }
-    })();
-    return () => { active = false; };
-  }, [user?.id]);
+  // role is set within fetchProfile; no separate effect needed
 
   // Manual refresh button handler
   const handleRefresh = async () => {

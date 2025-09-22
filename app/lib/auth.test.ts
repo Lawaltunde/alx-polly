@@ -1,30 +1,31 @@
 import { vi, describe, it, expect, beforeEach } from 'vitest';
+import * as server from '@/app/lib/supabase/server';
 
 // We'll mock the server client to return a singleton instance so our overrides are respected
 describe('getUserRole', () => {
   let mockRole: 'user' | 'admin' | null = null;
+  let singleton: any;
 
-  beforeEach(async () => {
-    vi.resetModules();
-    mockRole = null;
-
-    // Remock the server module with a singleton
-    const singleton: any = {
-      from: vi.fn(() => ({
-        select: vi.fn(() => ({
-          eq: vi.fn(() => ({
-            single: vi.fn(async () => ({ data: mockRole != null ? { role: mockRole } : null, error: null })),
-          })),
+  const makeSingleton = () => ({
+    from: vi.fn(() => ({
+      select: vi.fn(() => ({
+        eq: vi.fn(() => ({
+          single: vi.fn(async () => ({ data: mockRole != null ? { role: mockRole } : null, error: null })),
         })),
       })),
-      auth: {
-        getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
-      },
-    };
+    })),
+    auth: {
+      getUser: vi.fn(async () => ({ data: { user: null }, error: null })),
+    },
+  });
 
-    const serverModulePath = '@/app/lib/supabase/server';
-    const mod: any = await import(serverModulePath);
-    mod.createClient.mockImplementation(async () => singleton);
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.resetAllMocks();
+    mockRole = null;
+    singleton = makeSingleton();
+    // Ensure createClient returns our singleton client
+    (server.createClient as unknown as { mockImplementation: Function }).mockImplementation(async () => singleton);
   });
 
   it('returns null when not authenticated', async () => {
@@ -35,10 +36,7 @@ describe('getUserRole', () => {
 
   it('returns role when authenticated (user)', async () => {
     mockRole = 'user';
-    const serverModulePath = '@/app/lib/supabase/server';
-    const mod: any = await import(serverModulePath);
-    const client: any = await mod.createClient();
-    client.auth.getUser = vi.fn(async () => ({ data: { user: { id: 'u1' } }, error: null }));
+    singleton.auth.getUser = vi.fn(async () => ({ data: { user: { id: 'u1' } }, error: null }));
 
     const { getUserRole } = await import('./auth');
     const role = await getUserRole();
@@ -47,10 +45,7 @@ describe('getUserRole', () => {
 
   it('returns admin role when authenticated (admin)', async () => {
     mockRole = 'admin';
-    const serverModulePath = '@/app/lib/supabase/server';
-    const mod: any = await import(serverModulePath);
-    const client: any = await mod.createClient();
-    client.auth.getUser = vi.fn(async () => ({ data: { user: { id: 'u2' } }, error: null }));
+    singleton.auth.getUser = vi.fn(async () => ({ data: { user: { id: 'u2' } }, error: null }));
 
     const { getUserRole } = await import('./auth');
     const role = await getUserRole();
