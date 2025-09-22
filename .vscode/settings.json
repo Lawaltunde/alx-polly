@@ -1,0 +1,6 @@
+{
+  // Silence VS Code CSS warnings for Tailwind/PostCSS at-rules used in globals.css
+  "css.lint.unknownAtRules": "ignore",
+  // Some Tailwind directives may be parsed as properties by the CSS LS; ignore to reduce noise
+  "css.lint.unknownProperties": "ignore"
+}

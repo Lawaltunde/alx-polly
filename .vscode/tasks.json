@@ -9,24 +9,6 @@
 				"test",
 				"-s"
 			]
-		},
-		{
-			"label": "Run tests",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"test",
-				"-s"
-			]
-		},
-		{
-			"label": "Run tests",
-			"type": "shell",
-			"command": "npm",
-			"args": [
-				"test",
-				"-s"
-			]
 		}
 	]
 }
