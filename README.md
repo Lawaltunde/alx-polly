@@ -2,6 +2,14 @@
 
 Polly is a full‑stack polling app where users create polls, vote, and view results. It uses RLS‑secured Supabase with role‑based access (admin vs user), a modern Next.js App Router UI, and a fully tested workflow.
 
+## Demo
+
+<video src="./public/demo/demo.mov" poster="./public/demo/placeholder.svg" controls playsinline muted width="960">
+    Sorry, your browser doesn't support embedded videos.
+</video>
+
+Tip: Current demo is `.mov` for convenience. For best browser/GitHub support, consider converting to MP4 (H.264) or WebM and updating the src.
+
 ## Features
 
 - Authentication (email/PKCE via Supabase)
