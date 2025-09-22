@@ -300,9 +300,9 @@ export async function listPollsForAdmin(params: {
   let query = supabase
     .from('polls')
     .select(
-      `id, question, status, created_at, created_by,
-       profiles(id, username),
-       votes(count)`,
+  `id, question, status, created_at, created_by,
+   profiles(id, username),
+   poll_options(id, votes(count))`,
       { count: 'exact' }
     )
     .range(from, to);
@@ -332,16 +332,22 @@ export async function listPollsForAdmin(params: {
     return { items: [], total: 0, page, pageSize, pageCount: 0 };
   }
 
-  const items = (data ?? []).map((row: any) => ({
-    id: row.id as string,
-    question: row.question as string,
-    status: row.status as string,
-    created_at: row.created_at as string,
-    owner_username: row.profiles?.username ?? null,
-    total_votes: Array.isArray(row.votes) && row.votes[0] && typeof row.votes[0].count === 'number'
-      ? row.votes[0].count
-      : 0,
-  }));
+  const items = (data ?? []).map((row: any) => {
+    const options = Array.isArray(row.poll_options) ? row.poll_options : [];
+    let total = 0;
+    for (const opt of options) {
+      const c = Array.isArray(opt?.votes) && opt.votes[0] && typeof opt.votes[0].count === 'number' ? opt.votes[0].count : 0;
+      total += c;
+    }
+    return {
+      id: row.id as string,
+      question: row.question as string,
+      status: row.status as string,
+      created_at: row.created_at as string,
+      owner_username: row.profiles?.username ?? null,
+      total_votes: total,
+    };
+  });
 
   const total = typeof count === 'number' ? count : items.length;
   const pageCount = total === 0 ? 0 : Math.ceil(total / pageSize);
