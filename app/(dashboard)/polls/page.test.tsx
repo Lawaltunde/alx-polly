@@ -5,11 +5,13 @@ import PollsPage from './page';
 // Mock the Supabase queries (SSR variant used by page)
 vi.mock('@/app/lib/supabase/server-queries', () => ({
   getUserPolls: vi.fn(),
+  getParticipatedPolls: vi.fn(),
 }));
 
-// Mock auth to avoid redirect in server component
+// Mock auth to avoid redirect in server component and return non-admin role
 vi.mock('@/app/lib/auth', () => ({
   requireAuth: vi.fn(async () => ({ id: 'test-user' })),
+  getUserRole: vi.fn(async () => 'user'),
 }));
 
 describe('PollsPage', () => {
@@ -18,7 +20,7 @@ describe('PollsPage', () => {
   });
 
   it('should render polls list when polls exist', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -30,27 +32,30 @@ describe('PollsPage', () => {
         profiles: { username: 'user1' },
       },
     ]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
-    expect(screen.getByText('My Polls')).toBeInTheDocument();
-    expect(screen.getByText('What is your favorite color?')).toBeInTheDocument();
-    expect(screen.getByText('Create Poll')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'My Polls' })).toBeInTheDocument();
+  // Card title is not a semantic heading; assert via the accessible link name
+  expect(screen.getByRole('link', { name: /what is your favorite color\?/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create Poll' })).toBeInTheDocument();
   });
 
   it('should render empty state when no polls exist', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
-    expect(screen.getByText('No Polls Yet')).toBeInTheDocument();
-    expect(screen.getByText(/It looks like there are no polls available right now/)).toBeInTheDocument();
-    expect(screen.getByText('Create a New Poll')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'No Polls Yet' })).toBeInTheDocument();
+    expect(screen.getByText(/there are no polls available right now/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Create a New Poll' })).toBeInTheDocument();
   });
 
   it('should display poll options correctly', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -63,6 +68,7 @@ describe('PollsPage', () => {
         profiles: { username: 'user1' },
       },
     ]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
@@ -70,7 +76,7 @@ describe('PollsPage', () => {
   });
 
   it('should display total vote count for each poll', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -83,6 +89,7 @@ describe('PollsPage', () => {
         profiles: { username: 'user1' },
       },
     ]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
@@ -91,7 +98,7 @@ describe('PollsPage', () => {
   });
 
   it('should have correct links to poll details', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/server-queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
       {
         id: '1',
@@ -103,26 +110,30 @@ describe('PollsPage', () => {
         profiles: { username: 'user1' },
       },
     ]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
-    const pollLinks = screen.getAllByRole('link');
-    expect(pollLinks[1]).toHaveAttribute('href', '/polls/1');
+    const detailLink = screen.getByRole('link', { name: /what is your favorite color\?/i });
+    expect(detailLink).toHaveAttribute('href', '/polls/1');
   });
 
   it('should have correct link to create new poll', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     render(await PollsPage());
 
-    const createPollLink = screen.getByText('Create Poll').closest('a');
+    const createPollLink = screen.getByRole('link', { name: 'Create Poll' });
     expect(createPollLink).toHaveAttribute('href', '/polls/new');
   });
 
   it('should handle data loading error gracefully', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockRejectedValue(new Error('Failed to load polls'));
+    // even if participated resolves, the page should show the error state because try/catch wraps both
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
     // This should not throw and should render the component
     try {

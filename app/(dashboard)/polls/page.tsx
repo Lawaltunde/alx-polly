@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { PlusCircle } from "lucide-react";
-import { requireAuth } from "@/app/lib/auth";
+import { requireAuth, getUserRole } from "@/app/lib/auth";
 export default async function PollsPage() {
   // Require auth and only show the signed-in user's polls
   const user = await requireAuth();
   let polls: PollWithDetails[] = [];
   let participated: PollWithDetails[] = [];
   let fetchError: unknown = null;
+  // Determine if user is admin (server-side) to show Admin Panel entry point
+  const role = await getUserRole(user.id);
+  const isAdmin = role === 'admin';
   try {
     polls = await getUserPolls(user.id);
     participated = await getParticipatedPolls(user.id);
@@ -26,12 +29,19 @@ export default async function PollsPage() {
       <div className="flex items-center justify-between">
   <h1 className="text-4xl font-bold text-gray-800 dark:text-white">My Polls</h1>
         {/* This link navigates the user to the page for creating a new poll. */}
-        <Link href="/polls/new">
-          <Button className="create-poll-button flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white">
-            <PlusCircle className="w-5 h-5" />
-            <span>Create Poll</span>
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          {isAdmin && (
+            <Link href="/admin" aria-label="Open Admin Panel">
+              <Button variant="outline" className="admin-panel-button">Admin Panel</Button>
+            </Link>
+          )}
+          <Link href="/polls/new">
+            <Button className="create-poll-button flex items-center space-x-2 bg-blue-500 hover:bg-blue-600 text-white">
+              <PlusCircle className="w-5 h-5" />
+              <span>Create Poll</span>
+            </Button>
+          </Link>
+        </div>
       </div>
   {fetchError ? (
         <div className="flex flex-col items-center justify-center text-center py-20">

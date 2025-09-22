@@ -1,4 +1,5 @@
 import * as React from "react";
+import { X } from "lucide-react";
 
 export interface DialogProps {
   open: boolean;
@@ -80,12 +81,13 @@ export function Dialog({ open, onOpenChange, children }: DialogProps) {
       >
         {children}
         <button
-          className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+          className="absolute top-2.5 right-2.5 inline-flex h-9 w-9 items-center justify-center rounded-md text-gray-700 hover:text-gray-900 hover:bg-gray-100 dark:text-gray-300 dark:hover:text-white dark:hover:bg-gray-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
           onClick={() => onOpenChange(false)}
           aria-label="Close"
           tabIndex={0}
         >
-          ×
+          <X className="h-5 w-5" aria-hidden="true" />
+          <span className="sr-only">Close</span>
         </button>
       </div>
     </div>

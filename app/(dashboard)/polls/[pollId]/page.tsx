@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import ShareButton from "@/app/components/ShareButton";
+import QRCodeButton from "@/app/components/QRCodeButton";
 import PollStatusButton from "@/app/components/shared/PollStatusButton";
 import { Settings } from "lucide-react";
 import PollVoteFormDashboard from "./poll-vote-form-dashboard";
@@ -30,6 +31,7 @@ export default async function PollPage({ params }: { params: Promise<{ pollId: s
             </Button>
           </Link>
           <ShareButton pollId={poll.id} />
+          <QRCodeButton pollId={poll.id} />
           <PollStatusButton pollId={poll.id} status={poll.status} />
         </div>
       </div>

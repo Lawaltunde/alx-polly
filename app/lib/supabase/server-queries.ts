@@ -70,10 +70,23 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
     throw new Error('Poll not found');
   }
   if (existingPoll.created_by !== userId) {
-    throw new Error('Unauthorized to update this poll');
+    // Admin bypass
+    const { data: isAdmin } = await (supabase as any).rpc?.('is_admin', { uid: userId }) ?? { data: false };
+    if (!isAdmin) {
+      throw new Error('Unauthorized to update this poll');
+    }
   }
 
-  const updates: any = {
+  const updates: Partial<{
+    question: string;
+    description: string | null;
+    require_auth: boolean;
+    single_vote: boolean;
+    status: string;
+    expires_at: string | null;
+    visibility: string;
+    results_visibility: string;
+  }> = {
     question: pollData.question,
     description: pollData.description,
     require_auth: pollData.require_auth,
@@ -83,7 +96,6 @@ export async function updatePoll(pollId: string, pollData: UpdatePollData, userI
   };
   if (typeof pollData.visibility !== 'undefined') updates.visibility = pollData.visibility;
   if (typeof pollData.results_visibility !== 'undefined') updates.results_visibility = pollData.results_visibility;
-
   const { data: poll, error: updateError } = await supabase
     .from('polls')
     .update(updates)
@@ -120,7 +132,10 @@ export async function togglePollStatus(pollId: string, userId: string): Promise<
     throw new Error('Poll not found');
   }
   if (existingPoll.created_by !== userId) {
-    throw new Error('Unauthorized to update this poll');
+    const { data: isAdmin } = await (supabase as any).rpc?.('is_admin', { uid: userId }) ?? { data: false };
+    if (!isAdmin) {
+      throw new Error('Unauthorized to update this poll');
+    }
   }
 
   const newStatus = existingPoll.status === 'open' ? 'closed' : 'open';

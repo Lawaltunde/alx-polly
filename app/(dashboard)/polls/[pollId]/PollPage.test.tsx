@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen } from '@/test/utils/test-utils';
 import { vi, describe, it, expect, beforeEach, Mock } from 'vitest';
 import PollPage from './page';
 
@@ -12,6 +12,17 @@ vi.mock('@/app/lib/supabase/queries', () => ({
     { id: '2', text: 'Blue', vote_count: 3 },
   ]),
 }));
+// Mock Next.js navigation helpers used by the page
+vi.mock('next/navigation', async (orig) => {
+  const actual = await (orig as any)();
+  return {
+    ...actual,
+    notFound: vi.fn(() => {
+      // Mimic Next behavior by throwing to interrupt rendering
+      throw new Error('NEXT_NOT_FOUND');
+    }),
+  };
+});
 
 describe('PollPage', () => {
   beforeEach(() => {
@@ -31,11 +42,11 @@ describe('PollPage', () => {
       profiles: { username: 'user1' },
     });
 
-    render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
+  render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
 
-    expect(screen.getByText('What is your favorite color?')).toBeInTheDocument();
-    expect(screen.getByText('Options')).toBeInTheDocument();
-    expect(screen.getByText('Results')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /what is your favorite color\?/i, level: 1 })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Options' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Results' })).toBeInTheDocument();
   });
 
   it('should display vote counts for each option', async () => {
@@ -51,24 +62,25 @@ describe('PollPage', () => {
       profiles: { username: 'user1' },
     });
 
-    render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
+  render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
 
-    // Since we're not displaying vote counts yet, just check the sections exist
-    expect(screen.getByText('Options')).toBeInTheDocument();
-    expect(screen.getByText('Results')).toBeInTheDocument();
+  // Since we're not displaying vote counts yet, just check the sections exist
+  expect(screen.getByRole('heading', { name: 'Options' })).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: 'Results' })).toBeInTheDocument();
   });
 
   it('should render a not found message if the poll does not exist', async () => {
   const { getPoll } = await import('@/app/lib/supabase/server-queries');
   (getPoll as unknown as Mock).mockResolvedValue(null);
-
+    const { notFound } = await import('next/navigation');
     try {
       await PollPage({ params: Promise.resolve({ pollId: '404' }) });
-      // If it doesn't throw, that's unexpected
+      // Should not reach here
       expect(true).toBe(false);
-    } catch (error) {
-      // Expect it to throw notFound error
-      expect(error).toBeDefined();
+    } catch (error: any) {
+      expect(error).toBeInstanceOf(Error);
+      expect(error.message).toMatch(/NEXT_NOT_FOUND/);
+      expect((notFound as unknown as Mock)).toHaveBeenCalled();
     }
   });
 
@@ -84,10 +96,10 @@ describe('PollPage', () => {
       profiles: { username: 'user1' },
     });
 
-    render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
+  render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
 
-    // Since we're not implementing voting yet, just check the poll renders
-    expect(screen.getByText('What is your favorite color?')).toBeInTheDocument();
+  // Since we're not implementing voting yet, just check the poll renders
+  expect(screen.getByRole('heading', { name: /what is your favorite color\?/i, level: 1 })).toBeInTheDocument();
   });
 
   it('should display poll metadata correctly', async () => {
@@ -106,9 +118,9 @@ describe('PollPage', () => {
       status: 'open',
     });
 
-    render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
+  render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
 
-    expect(screen.getByText('What is your favorite color?')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /what is your favorite color\?/i, level: 1 })).toBeInTheDocument();
   });
 
   it('should handle closed polls appropriately', async () => {
@@ -124,9 +136,9 @@ describe('PollPage', () => {
       status: 'closed',
     });
 
-    render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
+  render(await PollPage({ params: Promise.resolve({ pollId: '1' }) }));
 
-    expect(screen.getByText('What is your favorite color?')).toBeInTheDocument();
+  expect(screen.getByRole('heading', { name: /what is your favorite color\?/i, level: 1 })).toBeInTheDocument();
   });
 
   it('should handle data loading errors gracefully', async () => {

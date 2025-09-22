@@ -223,8 +223,12 @@ export async function deletePoll(supabase: any, pollId: string, userId: string):
   }
 
   if (poll.created_by !== userId) {
-    console.error('Unauthorized to delete this poll. poll.created_by:', poll.created_by, 'userId:', userId);
-    throw new Error('Unauthorized to delete this poll');
+    // Admin bypass using rpc helper
+    const { data: isAdmin } = await supabase.rpc?.('is_admin', { uid: userId }) ?? { data: false };
+    if (!isAdmin) {
+      console.error('Unauthorized to delete this poll. poll.created_by:', poll.created_by, 'userId:', userId);
+      throw new Error('Unauthorized to delete this poll');
+    }
   }
 
   // Delete the poll. The database schema is set up with cascading deletes,

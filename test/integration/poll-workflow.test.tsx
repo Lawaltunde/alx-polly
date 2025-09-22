@@ -5,16 +5,19 @@ import PollsPage from '@/app/(dashboard)/polls/page';
 import NewPollPage from '@/app/(dashboard)/polls/new/page';
 import { Mock } from 'vitest';
 
-// Mock the Supabase queries
-vi.mock('@/app/lib/supabase/queries', () => ({
-  getPolls: vi.fn(),
-  getPoll: vi.fn(),
+// Stub Next.js server-only module for Vitest
+vi.mock('server-only', () => ({}));
+
+// Mock SSR Supabase queries used by server components
+vi.mock('@/app/lib/supabase/server-queries', () => ({
   getUserPolls: vi.fn(),
+  getParticipatedPolls: vi.fn(),
 }));
 
-// Mock auth to avoid redirect from requireAuth in server component
+// Mock auth to avoid redirect from requireAuth in server component and provide role
 vi.mock('@/app/lib/auth', () => ({
   requireAuth: vi.fn(async () => ({ id: 'test-user' })),
+  getUserRole: vi.fn(async () => 'user'),
 }));
 
 // Mock react-dom for form state
@@ -32,8 +35,8 @@ describe('Poll Workflow Integration', () => {
 
   describe('Complete Poll Lifecycle', () => {
     it('should allow creating and viewing a new poll', async () => {
-      // Mock initial polls list with Supabase structure
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+    // Mock initial polls list with Supabase structure
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
@@ -45,6 +48,7 @@ describe('Poll Workflow Integration', () => {
           profiles: { username: 'user1' },
         },
       ]);
+    (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
       
       // Render polls page
       render(await PollsPage());
@@ -111,7 +115,7 @@ describe('Poll Workflow Integration', () => {
 
   describe('Data Persistence', () => {
     it('should handle poll data retrieval', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
@@ -123,6 +127,7 @@ describe('Poll Workflow Integration', () => {
           profiles: { username: 'user1' },
         },
       ]);
+      (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
       // Test polls list
       render(await PollsPage());
@@ -138,8 +143,9 @@ describe('Poll Workflow Integration', () => {
 
   describe('Error Handling', () => {
     it('should handle data loading errors gracefully', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockRejectedValue(new Error('Network error'));
+      (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
       // Should not throw
       try {
@@ -152,8 +158,9 @@ describe('Poll Workflow Integration', () => {
     });
 
     it('should handle empty polls list', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([]);
+      (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
       render(await PollsPage());
 
@@ -164,7 +171,7 @@ describe('Poll Workflow Integration', () => {
 
   describe('User Experience', () => {
     it('should provide clear navigation between pages', async () => {
-  const { getUserPolls } = await import('@/app/lib/supabase/queries');
+  const { getUserPolls, getParticipatedPolls } = await import('@/app/lib/supabase/server-queries');
   (getUserPolls as unknown as Mock).mockResolvedValue([
         {
           id: '1',
@@ -176,6 +183,7 @@ describe('Poll Workflow Integration', () => {
           profiles: { username: 'user1' },
         },
       ]);
+      (getParticipatedPolls as unknown as Mock).mockResolvedValue([]);
 
       render(await PollsPage());
 
