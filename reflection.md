@@ -25,6 +25,6 @@ Shipping this full‑stack project end‑to‑end felt different—in the best w
 
 ## Looking Forward
 
-This project proved I can partner with AI to deliver a production‑style stack: Next.js 15, Supabase with RLS, server actions, a themed UI, and a green test suite. Next steps I’m excited to explore with the same workflow: richer admin tools, notifications, and deeper analytics—each guided by small contracts, typed helpers, and pragmatic tests.
+This project reinforced that partnering with AI helps me ship production‑grade software across stacks—not just this web stack. The same habits transfer to any environment: co‑designing architecture, scaffolding quickly, codifying invariants with types and tests, security‑first auth/authorization, and iterative, AI‑assisted reviews. Whether it’s a Next.js + Supabase app, an Express/Django API, a Go service, background workers, or data/ML pipelines, the workflow remains: define small contracts, keep boundaries typed, validate with pragmatic tests, and iterate with confidence. Next.
 
 Building “with AI” didn’t replace my craft—it amplified it. I stayed in control, moved faster, and ended up with a cleaner codebase I understand and trust.
