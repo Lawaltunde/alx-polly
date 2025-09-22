@@ -4,9 +4,7 @@ Polly is a full‑stack polling app where users create polls, vote, and view res
 
 ## Demo
 
-[![Watch the demo](./public/demo/placeholder.jpeg)](./public/demo/demo.mov)
-
-Note: GitHub README doesn’t render inline video players. Click the image to open the video. For wide support, consider converting to MP4 (H.264) or WebM.
+![Demo](./public/demo/placeholder.jpeg)
 
 ## Features
 
