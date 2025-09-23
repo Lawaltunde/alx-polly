@@ -5,7 +5,7 @@
 ### 1. Environment Setup
 Your `.env.local` file is already configured with Supabase credentials:
 ```env
-NEXT_PUBLIC_SUPABASE_URL=https://knykrvtbvpnxvuycmmld.supabase.co
+NEXT_PUBLIC_SUPABASE_URL=https://<YOUR_PROJECT_REF>.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 ```
 
@@ -13,7 +13,7 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 
 #### Option A: Using Supabase Dashboard (Recommended)
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
-2. Select your project: `knykrvtbvpnxvuycmmld`
+2. Select your project: `<YOUR_PROJECT_REF>`
 3. Go to **SQL Editor**
 4. Copy and paste the contents of `supabase/migrations/001_initial_schema.sql`
 5. Click **Run** to execute the migration
@@ -27,7 +27,7 @@ npm install -g supabase
 supabase login
 
 # Link your project
-supabase link --project-ref knykrvtbvpnxvuycmmld
+supabase link --project-ref <YOUR_PROJECT_REF>
 
 # Run migration
 supabase db push
