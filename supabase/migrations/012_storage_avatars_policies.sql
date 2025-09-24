@@ -11,12 +11,14 @@ on conflict (id) do nothing;
 alter table if exists storage.objects enable row level security;
 
 -- Public read access to files in the avatars bucket
-create policy if not exists "Public read access to avatars"
+drop policy if exists "Public read access to avatars" on storage.objects;
+create policy "Public read access to avatars"
 on storage.objects for select
 using (bucket_id = 'avatars');
 
 -- Allow authenticated users to upload to the avatars bucket
-create policy if not exists "Authenticated users can upload avatars"
+drop policy if exists "Authenticated users can upload avatars" on storage.objects;
+create policy "Authenticated users can upload avatars"
 on storage.objects for insert
 with check (
   bucket_id = 'avatars'
@@ -24,7 +26,8 @@ with check (
 );
 
 -- Allow owners to update their own files in the avatars bucket
-create policy if not exists "Owners can update their avatars"
+drop policy if exists "Owners can update their avatars" on storage.objects;
+create policy "Owners can update their avatars"
 on storage.objects for update
 using (
   bucket_id = 'avatars' and owner = auth.uid()
@@ -34,7 +37,8 @@ with check (
 );
 
 -- Allow owners to delete their own files in the avatars bucket
-create policy if not exists "Owners can delete their avatars"
+drop policy if exists "Owners can delete their avatars" on storage.objects;
+create policy "Owners can delete their avatars"
 on storage.objects for delete
 using (
   bucket_id = 'avatars' and owner = auth.uid()

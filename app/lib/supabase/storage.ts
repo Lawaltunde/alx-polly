@@ -1,4 +1,5 @@
-import { createClient } from "./client";
+// Use the server client so uploads run with the authenticated user's session
+import { createClient } from "./server";
 
 export async function uploadProfilePicture(userId: string, file: File) {
   // Validate userId
