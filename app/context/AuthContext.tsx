@@ -7,7 +7,6 @@ import {
   useState,
   useCallback,
 } from "react";
-import { createClient } from "@/app/lib/supabase/client";
 import { User } from "@supabase/supabase-js";
 
 type AuthContextType = {
@@ -28,15 +27,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Initialize supabase client once
   useEffect(() => {
-    let mounted = true;
-    (async () => {
-      const { createClient } = await import("@/app/lib/supabase/client");
-      const client = await createClient();
-      if (mounted) setSupabase(client);
-    })();
-    return () => {
-      mounted = false;
-    };
+    // Use @supabase/ssr browser client so auth from cookies is recognized
+    const client = createBrowserClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    );
+    setSupabase(client);
   }, []);
 
   const refreshUser = useCallback(async () => {
