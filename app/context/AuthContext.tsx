@@ -28,11 +28,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   // Initialize supabase client once
   useEffect(() => {
     // Use @supabase/ssr browser client so auth from cookies is recognized
-    const client = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    );
-    setSupabase(client);
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    
+    if (!url || !anonKey) {
+      console.error('Missing required Supabase environment variables');
+      return;
+    }
+    
+    try {
+      const client = createBrowserClient(url, anonKey);
+      setSupabase(client);
+    } catch (error) {
+      console.error('Failed to initialize Supabase client:', error);
+    }
   }, []);
 
   const refreshUser = useCallback(async () => {

@@ -180,6 +180,7 @@ export function ProfileForm({ profileAvatarUrl }: { profileAvatarUrl?: string })
                       type="file"
                       id="profile_picture"
                       name="profile_picture"
+                      accept="image/png,image/jpeg,image/webp"
                       onChange={handleFileChange}
                     />
                   </div>

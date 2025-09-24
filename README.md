@@ -4,7 +4,7 @@ Polly is a full‑stack polling app where users create polls, vote, and view res
 
 ## Demo
 
-![Demo](./public/demo/placeholder.jpeg)
+<img align = 'left' src = './public/demo/placeholder.jpeg' alt = 'Demo' width = '400'/>
 
 ## Features
 

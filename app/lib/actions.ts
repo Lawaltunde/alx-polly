@@ -66,6 +66,14 @@ export async function updateProfile(prevState: any, formData: FormData) {
     return { errors: { _form: [profileError.message] } };
   }
 
+  // Also update auth user metadata so client header/avatar reflects immediately
+  const { error: metaError } = await supabase.auth.updateUser({
+    data: { avatar_url, first_name, last_name },
+  });
+  if (process.env.NODE_ENV === "development" && metaError) {
+    console.error("Auth metadata update failed:", metaError);
+  }
+
   // Update email if changed
   if (email && email !== user.email) {
     const { error: emailError } = await supabase.auth.updateUser({ email });
@@ -74,9 +82,10 @@ export async function updateProfile(prevState: any, formData: FormData) {
     }
   }
 
-  // Success: redirect to dashboard
-  revalidatePath("/dashboard");
-  redirect("/dashboard");
+  // Success: revalidate and return to Settings so user sees updates
+  revalidatePath("/settings");
+  revalidatePath("/", "layout");
+  redirect("/settings");
 }
 
 export async function deleteAccountAction() {
