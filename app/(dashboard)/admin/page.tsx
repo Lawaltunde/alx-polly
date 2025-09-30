@@ -4,14 +4,10 @@ import { listPollsForAdmin } from '@/app/lib/supabase/server-queries';
 import { deletePollAction } from '@/app/lib/actions';
 import { Button } from '@/components/ui/button';
 
-export default async function AdminPage({
-  searchParams,
-}: {
-  searchParams?: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function AdminPage({ searchParams }: { searchParams?: any }) {
   await requireAdmin();
 
-  const sp = (await searchParams) ?? {};
+  const sp = searchParams && typeof searchParams.then === 'function' ? await searchParams : (searchParams ?? {});
   const page = Number(Array.isArray(sp.page) ? sp.page[0] : sp.page) || 1;
   const q = Array.isArray(sp.q) ? sp.q[0] : ((sp.q ?? '') as string);
   const status = (Array.isArray(sp.status) ? sp.status[0] : sp.status) as 'open' | 'closed' | undefined;
