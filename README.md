@@ -1,3 +1,4 @@
+https://vote-app-umber.vercel.app/polls
 # Polly – Real‑Time Polls with Next.js + Supabase
 
 Polly is a full‑stack polling app where users create polls, vote, and view results. It uses RLS‑secured Supabase with role‑based access (admin vs user), a modern Next.js App Router UI, and a fully tested workflow.
@@ -5,6 +6,7 @@ Polly is a full‑stack polling app where users create polls, vote, and view res
 ## Demo
 
 <img align = 'left' src = './public/demo/placeholder.jpeg' alt = 'Demo' width = '400'/>
+https://vote-app-umber.vercel.app/polls
 
 ## Features
 
