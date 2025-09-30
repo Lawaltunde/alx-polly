@@ -4,15 +4,20 @@ import { listPollsForAdmin } from '@/app/lib/supabase/server-queries';
 import { deletePollAction } from '@/app/lib/actions';
 import { Button } from '@/components/ui/button';
 
-export default async function AdminPage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function AdminPage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
   await requireAdmin();
 
-  const page = Number(Array.isArray(searchParams?.page) ? searchParams?.page[0] : searchParams?.page) || 1;
-  const q = Array.isArray(searchParams?.q) ? searchParams?.q[0] : (searchParams?.q ?? '') as string;
-  const status = (Array.isArray(searchParams?.status) ? searchParams?.status[0] : searchParams?.status) as 'open' | 'closed' | undefined;
-  const owner = Array.isArray(searchParams?.owner) ? searchParams?.owner[0] : (searchParams?.owner ?? '') as string;
-  const sortParam = Array.isArray(searchParams?.sort) ? searchParams?.sort[0] : (searchParams?.sort ?? 'created_at') as string;
-  const dirParam = Array.isArray(searchParams?.dir) ? searchParams?.dir[0] : (searchParams?.dir ?? 'desc') as string;
+  const sp = (await searchParams) ?? {};
+  const page = Number(Array.isArray(sp.page) ? sp.page[0] : sp.page) || 1;
+  const q = Array.isArray(sp.q) ? sp.q[0] : ((sp.q ?? '') as string);
+  const status = (Array.isArray(sp.status) ? sp.status[0] : sp.status) as 'open' | 'closed' | undefined;
+  const owner = Array.isArray(sp.owner) ? sp.owner[0] : ((sp.owner ?? '') as string);
+  const sortParam = Array.isArray(sp.sort) ? sp.sort[0] : ((sp.sort ?? 'created_at') as string);
+  const dirParam = Array.isArray(sp.dir) ? sp.dir[0] : ((sp.dir ?? 'desc') as string);
   const sort: 'created_at' | 'question' | 'status' =
     sortParam === 'question' || sortParam === 'status' ? (sortParam as any) : 'created_at';
   const dir: 'asc' | 'desc' = dirParam === 'asc' ? 'asc' : 'desc';

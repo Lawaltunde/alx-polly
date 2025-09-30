@@ -56,12 +56,16 @@ export async function updateProfile(prevState: any, formData: FormData) {
     }
   }
 
-  // Update user metadata/profile
-  const { error: profileError } = await supabase.from("profiles").update({
-    first_name,
-    last_name,
-    avatar_url,
-  }).eq("id", user.id);
+  // Update profile with columns that actually exist in DB schema
+  // (profiles table has full_name and avatar_url; no first_name/last_name columns)
+  const full_name = `${first_name} ${last_name}`.trim();
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      full_name,
+      avatar_url,
+    })
+    .eq("id", user.id);
   if (profileError) {
     return { errors: { _form: [profileError.message] } };
   }

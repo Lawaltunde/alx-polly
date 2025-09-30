@@ -1,5 +1,6 @@
 // Use the server client so uploads run with the authenticated user's session
 import { createClient } from "./server";
+import crypto from "node:crypto";
 
 export async function uploadProfilePicture(userId: string, file: File) {
   // Validate userId
@@ -36,15 +37,15 @@ export async function uploadProfilePicture(userId: string, file: File) {
   let fileExt = file.name.split('.').pop()?.toLowerCase() || "bin";
   if (!/^[a-z0-9]{1,8}$/.test(fileExt)) fileExt = "bin";
 
-  // Sanitize filename (prevent path traversal)
-  let safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 64);
-
-  const filePath = `avatars/${sanitizedId}.${fileExt}`;
+  // Generate a unique file name under a per-user folder so we don't need UPDATE policy
+  const unique = crypto.randomUUID().replace(/-/g, "");
+  const filePath = `${sanitizedId}/${unique}.${fileExt}`;
   const { error } = await supabase.storage
     .from("avatars")
     .upload(filePath, file, {
       cacheControl: "3600",
-      upsert: true,
+      // Insert-only to avoid needing an UPDATE policy
+      upsert: false,
       contentType: file.type,
     });
   if (error) {
